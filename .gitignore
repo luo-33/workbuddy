@@ -1,0 +1,38 @@
+# Workbuddy - Git ignore file
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+
+# WorkBuddy local storage
+.workbuddy/
+blobs/
+clipboard-images/
+
+# Temp files
+check.js
+full_js.js
+temp_*.py
+fix_*.py
+replace_*.py
+write_*.py
+new_*.js
