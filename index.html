@@ -9842,6 +9842,11 @@ function initSupabase() {
       return;
     }
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        console.log("当前用户:", session.user.email);
+    }
+});
     _supabaseReady = true;
     
     // Check existing session
@@ -10003,14 +10008,20 @@ function authRegister() {
     return;
   }
   
-  supabaseClient.auth.signUp({ email, password })
+  supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+        emailRedirectTo: "https://workbuddy-psi.vercel.app/"
+    }
+})
     .then(({ data, error }) => {
       if(error) {
         errEl.innerHTML = '❌ ' + error.message;
         errEl.style.display = 'block';
         return;
       }
-      alert('✅ 注册成功！请检查邮箱确认。如果未收到确认邮件，请直接登录。');
+      alert('✅ 注册成功！请前往邮箱完成确认，确认后即可登录。');
       closeModal('authModal');
   });
 }
