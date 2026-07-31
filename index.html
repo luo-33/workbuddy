@@ -1437,9 +1437,127 @@ textarea { resize: vertical; min-height: 80px; }
 @media (max-width: 767px) {
   .pwa-install-banner { display: block; }
 }
+
+/* ============================================================
+   GLASSMORPHISM OVERRIDE — 毛玻璃效果（安全版）
+   ============================================================ */
+:root {
+  --glass-bg: rgba(255,255,255,.58);
+  --glass-bg-strong: rgba(255,255,255,.72);
+  --glass-border: rgba(255,255,255,.65);
+  --glass-shadow: 0 8px 32px rgba(93,58,79,.10);
+  --glass-blur: 16px;
+}
+
+/* 1. 页面背景：纯渐变（不固定，避免与 fixed 光斑冲突） */
+body {
+  background: linear-gradient(135deg, #fdf2f7 0%, #f6f0fb 40%, #eef7f2 100%);
+  background-color: #fdf2f7;
+}
+
+/* 2. 装饰光斑：用真正的 div 而非 body 伪元素（避免与 backdrop-filter 冲突） */
+.glass-bg-decor {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(70px);
+  opacity: .5;
+}
+.glass-bg-decor.top-right {
+  width: 420px; height: 420px;
+  top: -140px; right: -120px;
+  background: radial-gradient(circle, rgba(196,86,119,.35), transparent 70%);
+}
+.glass-bg-decor.bottom-left {
+  width: 480px; height: 480px;
+  bottom: -160px; left: -140px;
+  background: radial-gradient(circle, rgba(74,157,111,.32), transparent 70%);
+}
+
+/* 3. 主体内容置于光斑上层（不要给 .sidebar 加 position，会覆盖它的 fixed） */
+.main, .mobile-bottom-nav, .modal { position: relative; z-index: 1; }
+
+/* 4. 通用毛玻璃卡片 */
+.card,
+.stat-card,
+.summary-card,
+.health-review-card,
+.growth-calendar-wrap,
+.year-review-card,
+.reading-book-item,
+.reading-current-card,
+.ai-tool-card,
+.workflow-card,
+.prompt-card,
+.ai-review-insight,
+.daily-report-card,
+.finance-card,
+.health-balance-card,
+.nce-card,
+.chat-bubble,
+.hrqa-card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* 5. 侧边栏毛玻璃（保留 fixed 定位，仅调整 z-index） */
+.sidebar {
+  z-index: 10;
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border-right: 1px solid var(--glass-border);
+}
+
+/* 6. 移动端底部导航毛玻璃 */
+.mobile-bottom-nav {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+  border-top: 1px solid var(--glass-border);
+}
+
+/* 7. 弹窗毛玻璃 */
+.modal {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 20px 60px rgba(93,58,79,.18);
+}
+
+/* 8. 欢迎横幅：渐变 + 玻璃 */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(74,157,111,.82), rgba(196,86,119,.55));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.35);
+  box-shadow: 0 10px 30px rgba(74,157,111,.18);
+}
+
+/* 9. 导航项 hover 微玻璃 */
+.nav-item:hover { background: rgba(255,255,255,.45); }
+
+/* 10. 文本可读性：半透明背景上加深文字阴影 */
+.card, .stat-card, .summary-card, .health-review-card, .growth-calendar-wrap,
+.year-review-card, .ai-tool-card, .workflow-card, .prompt-card, .sidebar,
+.modal { text-shadow: 0 1px 0 rgba(255,255,255,.4); }
+
+/* 11. 移动端性能：减少模糊半径 */
+@media (max-width: 767px) {
+  :root { --glass-blur: 10px; }
+  .glass-bg-decor { filter: blur(50px); }
+}
 </style>
 </head>
 <body>
+<!-- 毛玻璃背景装饰光斑 -->
+<div class="glass-bg-decor top-right"></div>
+<div class="glass-bg-decor bottom-left"></div>
 
 <!-- Mobile Menu Button -->
 <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
