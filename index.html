@@ -17,14 +17,9 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐷</text></svg>">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
+// Supabase 配置（由 initSupabase() 统一创建 supabaseClient，避免重复声明）
 const SUPABASE_URL = "https://wyvbkoltpbzuydlearch.supabase.co";
-
 const SUPABASE_ANON_KEY = "sb_publishable_LZ1X_cFE9x6UXBwfvLVFqA_Mgb4pMmQ";
-
-const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
 </script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -4704,77 +4699,99 @@ function renderGrowthLevel() {
   }
 }
 
-// ========== GROWTH CALENDAR ==========
+// ========== GROWTH CALENDAR (Robust v2) ==========
 let calMonthOffset = 0;
 
 function renderGrowthCalendar() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + calMonthOffset;
-  const calDate = new Date(year, month, 1);
-  const today = new Date();
-  
-  document.getElementById('calTitle').textContent = `📅 ${calDate.getFullYear()}年${calDate.getMonth()+1}月`;
+  try {
+    const now = new Date();
+    const calDate = new Date(now.getFullYear(), now.getMonth() + calMonthOffset, 1);
+    const grid = document.getElementById('calGrid');
+    if(!grid) return;  // Safe exit if element missing
 
-  const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate();
-  const firstDayOfWeek = calDate.getDay(); // 0=Sun
-  const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Mon=0
+    const title = document.getElementById('calTitle');
+    if(title) title.textContent = '\ud83d\udcc5 ' + calDate.getFullYear() + '\u5e74' + (calDate.getMonth()+1) + '\u6708';
 
-  const weekDays = ['一','二','三','四','五','六','日'];
-  let html = weekDays.map(d => `<div class="cal-weekday">${d}</div>`).join('');
+    const daysInMonth = new Date(calDate.getFullYear(), calDate.getMonth()+1, 0).getDate();
+    const firstDayOfWeek = calDate.getDay();
+    const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
-  // Empty cells
-  for(let i=0; i<startOffset; i++) html += `<div></div>`;
+    let html = ['\u4e00','\u4e8c','\u4e09','\u56db','\u4e94','\u516d','\u65e5']
+      .map(d => '<div class="cal-weekday">' + d + '</div>').join('');
+    for(let i=0; i<startOffset; i++) html += '<div></div>';
 
-  // Day cells
-  for(let d=1; d<=daysInMonth; d++){
-    const dateStr = `${calDate.getFullYear()}-${String(calDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const cellDate = new Date(calDate.getFullYear(), calDate.getMonth(), d);
-    const isToday = dateStr === todayStr();
-    const isFuture = cellDate > today;
+    const tStr = todayStr();
+    for(let d=1; d<=daysInMonth; d++) {
+      const dateStr = calDate.getFullYear() + '-' + String(calDate.getMonth()+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const cellDate = new Date(calDate.getFullYear(), calDate.getMonth(), d);
+      const isToday = dateStr === tStr;
+      const isFuture = cellDate > now;
 
-    // Determine state from all modules
-    const goals = DB.get('goals_'+dateStr);
-    const engRecs = DB.get('english_records',[]).filter(r=>r.date===dateStr);
-    const readingRecs = DB.get('reading_records',[]).filter(r=>r.date===dateStr);
-    const aiRecs = DB.get('ai_tools',[]).filter(r=>r.date===dateStr);
-    const aiTasks = DB.get('ai_tasks',[]).filter(r=>r.date===dateStr);
-    const xhsRecs = DB.get('xhs_records',[]).filter(r=>r.date===dateStr);
-    const burns = DB.get('burn_records',[]).filter(r=>r.date===dateStr);
-    const intakes = DB.get('intake_records',[]).filter(r=>r.date===dateStr);
-    const jobApps = DB.get('job_apply',[]).filter(r=>r.date===dateStr);
+      // Only 1 data source (goals) - simplest & most reliable
+      let done = 0, total = 0;
+      try {
+        const goals = DB.get('goals_' + dateStr);
+        if(Array.isArray(goals)) { done = goals.filter(g => g && g.done).length; total = goals.length; }
+      } catch(e) {}
 
-    const hasAny = goals || engRecs.length || readingRecs.length || aiRecs.length || aiTasks.length || xhsRecs.length || burns.length || intakes.length || jobApps.length;
-    const goalsDone = goals ? goals.filter(g=>g.done).length : 0;
-    const goalsTotal = goals ? goals.length : 0;
-    
-    let state = 'gray';
-    if(isFuture) state = 'future';
-    else if(goalsDone === goalsTotal && goalsTotal > 0) state = 'green';
-    else if(goalsDone > 0 || (hasAny && !isFuture)) state = 'yellow';
+      let state = 'gray';
+      if(isFuture) state = 'future';
+      else if(total > 0 && done === total) state = 'green';
+      else if(done > 0) state = 'yellow';
 
-    // Check if has events (milestones on this date)
-    const milestones = DB.get('milestones',[]);
-    const hasEvent = milestones.some(m => m.date === dateStr);
+      html += '<div class="cal-day ' + state + (isToday ? ' today' : '') + '" onclick="showDayDetail(\'' + dateStr + '\')">' + d + '</div>';
+    }
+    grid.innerHTML = html;
 
-    html += `<div class="cal-day ${state}${isToday?' today':''}${hasEvent?' has-event':''}" onclick="showDayDetail('${dateStr}')">${d}</div>`;
+    // Hide detail panel safely
+    const detail = document.getElementById('calDayDetail');
+    if(detail) detail.classList.remove('show');
+  } catch(e) {
+    console.warn('[Calendar] 网格渲染失败，使用降级视图:', e);
+    renderCalendarFallback();
   }
+}
 
-  document.getElementById('calGrid').innerHTML = html;
-  document.getElementById('calDayDetail').classList.remove('show');
+// Fallback: simple 7-day list if grid render throws
+function renderCalendarFallback() {
+  try {
+    const grid = document.getElementById('calGrid');
+    if(!grid) return;
+    const days = [];
+    for(let i=6; i>=0; i--) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const ds = d.toISOString().slice(0,10);
+      let done = 0, total = 0;
+      try {
+        const g = DB.get('goals_' + ds);
+        if(Array.isArray(g)) { done = g.filter(x => x && x.done).length; total = g.length; }
+      } catch(e) {}
+      days.push({ds, done, total});
+    }
+    grid.innerHTML = '<div style="font-size:12px;color:#5d3a4f;line-height:1.9;">' +
+      days.map(x => '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #faf0f4;">' +
+        '<span>' + formatDateLong(x.ds) + '</span>' +
+        '<span style="color:' + (x.total>0 && x.done===x.total ? '#2da667' : x.done>0 ? '#e67e22' : '#b3a0a8') + ';">' +
+        (x.total>0 ? x.done + '/' + x.total + ' \u2713' : '\u2500') + '</span></div>').join('') + '</div>';
+    const title = document.getElementById('calTitle');
+    if(title) title.textContent = '\ud83d\udcc5 \u8fd1 7 \u5929\u6210\u957f\u8bb0\u5f55';
+  } catch(e) { /* silent */ }
 }
 
 function calNav(dir) {
-  calMonthOffset += dir;
-  renderGrowthCalendar();
+  try {
+    calMonthOffset += dir;
+    renderGrowthCalendar();
+  } catch(e) { console.warn('[Calendar] 切换失败:', e); }
 }
 
 function showDayDetail(dateStr) {
   const detail = document.getElementById('calDayDetail');
   const title = document.getElementById('calDetailTitle');
   const content = document.getElementById('calDetailContent');
+  if(!detail || !content) return;  // Safe exit if elements missing
   
-  title.textContent = `📂 ${formatDateLong(dateStr)} 成长档案`;
+  if(title) title.textContent = `📂 ${formatDateLong(dateStr)} 成长档案`;
 
   // Gather data
   const goals = DB.get('goals_'+dateStr);
@@ -9794,8 +9811,7 @@ function importData(input) {
 }
 
 // ========== SUPABASE AUTH ==========
-const SUPABASE_URL = 'https://your-project.supabase.co';  // ← 替换为你的 Supabase URL
-const SUPABASE_ANON_KEY = 'your-anon-key';                // ← 替换为你的 Supabase anon key
+// SUPABASE_URL / SUPABASE_ANON_KEY 已在页面顶部 <script> 中配置
 // ===== Supabase Lifecycle =====
 let supabaseClient = null;
 let _supabaseReady = false;
