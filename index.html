@@ -10303,7 +10303,7 @@ function toggleDataMode() {
 // ========== SYNC MANAGER ==========
 const syncManager = {
   _syncing: false,
-  _tables: ['daily_plans', 'english_records', 'reading_records', 'health_records'],
+  _tables: ['profiles', 'daily_plans', 'english_records', 'nce_records', 'ai_tools', 'ai_tasks', 'job_records', 'interview_records', 'reading_records', 'knowledge_cards', 'wechat_articles', 'xhs_records', 'health_records', 'nutrition_records', 'exercise_records', 'finance_records', 'weekly_reviews', 'achievements'],
   _lastSync: null,
 
   // ===== Log sync history =====
@@ -10380,10 +10380,24 @@ const syncManager = {
     const tables = data.data.tables;
 
     const formatMap = {
+      profiles: tables.profiles,
       daily_plans: tables.daily_plans,
       english_records: tables.english_records,
+      nce_records: tables.nce_records,
+      ai_tools: tables.ai_tools,
+      ai_tasks: tables.ai_tasks,
+      job_records: tables.job_records,
+      interview_records: tables.interview_records,
       reading_records: tables.reading_records,
-      health_records: tables.health_records
+      knowledge_cards: tables.knowledge_cards,
+      wechat_articles: tables.wechat_articles,
+      xhs_records: tables.xhs_records,
+      health_records: tables.health_records,
+      nutrition_records: tables.nutrition_records,
+      exercise_records: tables.exercise_records,
+      finance_records: tables.finance_records,
+      weekly_reviews: tables.weekly_reviews,
+      achievements: tables.achievements
     };
 
     for(const tableName of this._tables) {
@@ -10434,14 +10448,280 @@ const syncManager = {
     const userId = currentUser.id;
     let downloaded = 0, errors = 0, errorDetails = [];
     
-    const tableMapper = {
-      daily_plans: 'goals_',
-      english_records: 'english_records',
-      reading_records: 'reading_records',
-      health_records: 'body_state_'
+    // 每张表下载后的回写逻辑（云端 → localStorage）
+    const applyDownload = (tableName, rows) => {
+      let count = 0;
+      if(tableName === 'profiles') {
+        if(rows[0]) DB.set('user_profile', {
+          nickname: rows[0].nickname, career: rows[0].career,
+          goal: rows[0].goal, longGoal: rows[0].long_goal, bio: rows[0].bio
+        });
+        count = rows.length;
+      }
+      else if(tableName === 'daily_plans') {
+        const grouped = {};
+        rows.forEach(r => {
+          if(!grouped[r.plan_date]) grouped[r.plan_date] = [];
+          grouped[r.plan_date].push({ id: 'g'+grouped[r.plan_date].length, text: r.goal_text, done: r.is_done });
+        });
+        for(const [date, goals] of Object.entries(grouped)) {
+          DB.set('goals_' + date, goals);
+          count += goals.length;
+        }
+      }
+      else if(tableName === 'english_records') {
+        const cloudData = rows.map(r => ({
+          date: r.record_date, article: r.article_title, time: String(r.duration_min),
+          newWordsList: r.new_words, phrases: r.phrases, speaking: r.speaking_min,
+          note: r.note, aiSummary: r.ai_summary
+        }));
+        const existing = DB.get('english_records', []);
+        const localDates = new Set(existing.map(e => e.date));
+        const newRows = cloudData.filter(r => r.date && !localDates.has(r.date));
+        existing.push(...newRows);
+        DB.set('english_records', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'nce_records') {
+        const cloudData = rows.map(r => ({
+          title: r.title, book: r.book_name, content: r.original_text,
+          date: r.study_date, status: r.status,
+          words: r.words_json || [], phrases: r.phrases_json || [], grammar: r.grammar_json || []
+        }));
+        const existing = DB.get('eng_articles', []);
+        const localTitles = new Set(existing.map(e => e.title));
+        const newRows = cloudData.filter(r => !localTitles.has(r.title));
+        existing.push(...newRows);
+        DB.set('eng_articles', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'ai_tools') {
+        const cloudData = rows.map(r => ({
+          name: r.name, type: r.category, core: r.core_function,
+          scene: r.use_scene, mastery: r.mastery_level, next: r.next_step
+        }));
+        const existing = DB.get('ai_tools', []);
+        const names = new Set(existing.map(e => e.name));
+        const newRows = cloudData.filter(r => !names.has(r.name));
+        existing.push(...newRows);
+        DB.set('ai_tools', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'ai_tasks') {
+        const tasks = [], flows = [];
+        rows.forEach(r => {
+          if(r.task_name && r.task_name.startsWith('工作流：')) {
+            flows.push({ name: r.task_name.replace('工作流：',''), tools: r.tool_used, steps: r.prompt_text, timeSaved: r.efficiency, scene: r.review });
+          } else {
+            tasks.push({
+              name: r.task_name, tool: r.tool_used, prompt: r.prompt_text,
+              output: r.ai_output, result: r.final_result, efficiency: r.efficiency,
+              review: r.review, date: r.task_date
+            });
+          }
+        });
+        const existingTasks = DB.get('ai_tasks', []);
+        const taskKeys = new Set(existingTasks.map(t => (t.name||'')+'|'+(t.date||'')));
+        const newTasks = tasks.filter(t => !taskKeys.has(t.name+'|'+(t.date||'')));
+        existingTasks.push(...newTasks);
+        DB.set('ai_tasks', existingTasks);
+        const existingFlows = DB.get('ai_flows', []);
+        const flowNames = new Set(existingFlows.map(f => f.name));
+        const newFlows = flows.filter(f => !flowNames.has(f.name));
+        existingFlows.push(...newFlows);
+        DB.set('ai_flows', existingFlows);
+        count = newTasks.length + newFlows.length;
+      }
+      else if(tableName === 'job_records') {
+        const cloudData = rows.map(r => ({
+          company: r.company, position: r.position, date: r.apply_date, status: r.status,
+          jd: r.jd_description, resumeVer: r.resume_version, prepNotes: r.prep_notes
+        }));
+        const existing = DB.get('job_apply', []);
+        const keys = new Set(existing.map(e => e.company+'|'+e.position+'|'+e.date));
+        const newRows = cloudData.filter(r => !keys.has(r.company+'|'+r.position+'|'+r.date));
+        existing.push(...newRows);
+        DB.set('job_apply', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'interview_records') {
+        const interviews = [], reviews = [];
+        rows.forEach(r => {
+          if(r.self_rate != null || r.ai_analysis != null) {
+            reviews.push({
+              company: r.company, date: r.interview_date, rate: r.self_rate,
+              weakQuestions: r.weakness, aiAnalysis: r.ai_analysis, nextStep: r.next_step, file: r.audio_file_url
+            });
+          } else {
+            interviews.push({
+              company: r.company, position: r.position, time: r.interview_date ? r.interview_date+'T00:00' : null,
+              round: r.round, result: r.result, feel: r.feeling, questions: r.questions,
+              answers: r.answers, weakness: r.weakness, file: r.audio_file_url
+            });
+          }
+        });
+        const existingInterviews = DB.get('job_interview', []);
+        const iKeys = new Set(existingInterviews.map(i => i.company+'|'+i.time));
+        const newInterviews = interviews.filter(i => !iKeys.has(i.company+'|'+i.time));
+        existingInterviews.push(...newInterviews);
+        DB.set('job_interview', existingInterviews);
+        const existingReviews = DB.get('job_reviews', []);
+        const rKeys = new Set(existingReviews.map(r => r.company+'|'+r.date));
+        const newReviews = reviews.filter(r => !rKeys.has(r.company+'|'+r.date));
+        existingReviews.push(...newReviews);
+        DB.set('job_reviews', existingReviews);
+        count = newInterviews.length + newReviews.length;
+      }
+      else if(tableName === 'reading_records') {
+        const records = [], notes = [], books = [];
+        rows.forEach(r => {
+          if(r.book_author != null || r.book_tag != null) {
+            books.push({ name: r.book_name, author: r.book_author, tag: r.book_tag, startDate: r.read_date });
+          } else if(r.chapter != null || r.note_type != null) {
+            notes.push({ book: r.book_name, date: r.read_date, chapter: r.chapter, type: r.note_type, time: r.duration_min, content: r.content, keyPoint: r.key_point });
+          } else {
+            records.push({ book: r.book_name, date: r.read_date, time: r.duration_min, content: r.content, keyPoint: r.key_point, aiSummary: r.ai_summary });
+          }
+        });
+        const mergeBy = (arr, keyArr, keyFn) => {
+          const keys = new Set(keyArr.map(keyFn));
+          const newRows = arr.filter(r => !keys.has(keyFn(r)));
+          keyArr.push(...newRows);
+          return newRows.length;
+        };
+        let cnt = 0;
+        cnt += mergeBy(records, DB.get('reading_records', []), r => r.date+'|'+r.book);
+        cnt += mergeBy(notes, DB.get('read_notes', []), r => r.date+'|'+r.book+'|'+r.type);
+        cnt += mergeBy(books, DB.get('read_books', []), r => r.name);
+        count = cnt;
+      }
+      else if(tableName === 'knowledge_cards') {
+        const cloudData = rows.map(r => ({
+          topic: r.topic, type: r.card_type, content: r.content,
+          source: r.source_book, understanding: r.my_understanding, scene: r.apply_scene
+        }));
+        const existing = DB.get('knowledge_cards', []);
+        const keys = new Set(existing.map(e => e.topic));
+        const newRows = cloudData.filter(r => !keys.has(r.topic));
+        existing.push(...newRows);
+        DB.set('knowledge_cards', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'wechat_articles') {
+        const cloudData = rows.map(r => ({
+          title: r.title, status: r.status, publishDate: r.publish_date,
+          readData: r.read_data, review: r.review
+        }));
+        const existing = DB.get('wechat_articles', []);
+        const keys = new Set(existing.map(e => e.title));
+        const newRows = cloudData.filter(r => !keys.has(r.title));
+        existing.push(...newRows);
+        DB.set('wechat_articles', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'xhs_records') {
+        const productions = [], ideas = [], virals = [];
+        rows.forEach(r => {
+          if(r.is_viral_case) {
+            virals.push({ name: r.title, reason: r.viral_reason, takeaway: r.takeaway, fileName: r.file_name });
+          } else if(r.source != null || r.ai_suggestion != null) {
+            ideas.push({ title: r.title, status: r.status, source: r.source, aiSuggestion: r.ai_suggestion });
+          } else {
+            productions.push({ title: r.title, type: r.content_type, copy: r.copy_text, status: r.status, fileName: r.file_name, data: r.data_performance });
+          }
+        });
+        const mergeBy = (arr, keyArr, keyFn) => {
+          const keys = new Set(keyArr.map(keyFn));
+          const newRows = arr.filter(r => !keys.has(keyFn(r)));
+          keyArr.push(...newRows);
+          return newRows.length;
+        };
+        let cnt = 0;
+        cnt += mergeBy(productions, DB.get('xhs_productions', []), r => r.title);
+        cnt += mergeBy(ideas, DB.get('xhs_ideas', []), r => r.title);
+        cnt += mergeBy(virals, DB.get('xhs_virals', []), r => r.name);
+        count = cnt;
+      }
+      else if(tableName === 'health_records') {
+        rows.forEach(r => {
+          if(r.record_date) DB.set('body_state_' + r.record_date, {
+            sleepHours: r.sleep_hours, sleepQuality: r.sleep_quality,
+            energy: r.energy_score, fatigue: r.fatigue_level
+          });
+        });
+        count = rows.length;
+      }
+      else if(tableName === 'nutrition_records') {
+        const cloudData = rows.map(r => ({
+          date: r.record_date, meal: r.meal_type, food: r.food_name,
+          cal: r.calories_kcal, protein: r.protein_g, carbs: r.carbs_g, fat: r.fat_g, note: r.note
+        }));
+        const existing = DB.get('intake_records', []);
+        const keys = new Set(existing.map(e => e.date+'|'+e.meal+'|'+e.food));
+        const newRows = cloudData.filter(r => !keys.has(r.date+'|'+r.meal+'|'+r.food));
+        existing.push(...newRows);
+        DB.set('intake_records', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'exercise_records') {
+        const cloudData = rows.map(r => ({
+          date: r.record_date, type: r.exercise_type, duration: r.duration_min,
+          cal: r.calories_burned, note: r.note
+        }));
+        const existing = DB.get('burn_records', []);
+        const keys = new Set(existing.map(e => e.date+'|'+e.type+'|'+e.duration));
+        const newRows = cloudData.filter(r => !keys.has(r.date+'|'+r.type+'|'+r.duration));
+        existing.push(...newRows);
+        DB.set('burn_records', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'finance_records') {
+        const income = [], expense = [];
+        rows.forEach(r => {
+          const item = { date: r.record_date, amount: r.amount, category: r.category, note: r.note };
+          if(r.type === 'income') income.push(item);
+          else expense.push(item);
+        });
+        const mergeBy = (arr, keyArr) => {
+          const keys = new Set(keyArr.map(e => e.date+'|'+e.amount+'|'+e.category));
+          const newRows = arr.filter(r => !keys.has(r.date+'|'+r.amount+'|'+r.category));
+          keyArr.push(...newRows);
+          return newRows.length;
+        };
+        let cnt = 0;
+        cnt += mergeBy(income, DB.get('fin_income', []));
+        cnt += mergeBy(expense, DB.get('fin_expense', []));
+        count = cnt;
+      }
+      else if(tableName === 'weekly_reviews') {
+        rows.forEach(r => {
+          if(r.week_start) DB.set('weekly_' + r.week_start, {
+            done: r.accomplishments, harvest: r.biggest_gain, problem: r.problems, nextWeek: r.next_week_plan
+          });
+        });
+        count = rows.length;
+      }
+      else if(tableName === 'achievements') {
+        const milestones = [], plans = [];
+        rows.forEach(r => {
+          if(r.type === 'milestone') milestones.push({ text: r.content, done: r.is_done, date: r.target_date });
+          else plans.push({ text: r.content, done: r.is_done });
+        });
+        const mergeBy = (arr, keyArr, keyFn) => {
+          const keys = new Set(keyArr.map(keyFn));
+          const newRows = arr.filter(r => !keys.has(keyFn(r)));
+          keyArr.push(...newRows);
+          return newRows.length;
+        };
+        let cnt = 0;
+        cnt += mergeBy(milestones, DB.get('milestones', []), r => r.text);
+        cnt += mergeBy(plans, DB.get('future_plans', []), r => r.text);
+        count = cnt;
+      }
+      return count;
     };
 
-    for(const [tableName, localKey] of Object.entries(tableMapper)) {
+    for(const tableName of this._tables) {
       try {
         const { data: rows, error } = await supabaseClient
           .from(tableName)
@@ -10457,47 +10737,7 @@ const syncManager = {
         }
         if(!rows || rows.length === 0) continue;
 
-        if(tableName === 'daily_plans') {
-          const grouped = {};
-          rows.forEach(r => {
-            if(!grouped[r.plan_date]) grouped[r.plan_date] = [];
-            grouped[r.plan_date].push({ id: 'g'+grouped[r.plan_date].length, text: r.goal_text, done: r.is_done });
-          });
-          for(const [date, goals] of Object.entries(grouped)) {
-            DB.set(localKey + date, goals);
-            downloaded += goals.length;
-          }
-        } else if(tableName === 'english_records') {
-          const cloudData = rows.map(r => ({
-            date: r.record_date, article: r.article_title, time: String(r.duration_min),
-            newWordsList: r.new_words, phrases: r.phrases, speaking: r.speaking_min, note: r.note, aiSummary: r.ai_summary
-          }));
-          const existing = DB.get(localKey, []);
-          const localDates = new Set(existing.map(e => e.date));
-          const newRows = cloudData.filter(r => !localDates.has(r.date));
-          existing.push(...newRows);
-          DB.set(localKey, existing);
-          downloaded += newRows.length;
-        } else if(tableName === 'reading_records') {
-          const cloudData = rows.map(r => ({
-            date: r.read_date, book: r.book_name, time: r.duration_min,
-            content: r.content, keyPoint: r.key_point, aiSummary: r.ai_summary
-          }));
-          const existing = DB.get(localKey, []);
-          const localKeys = new Set(existing.map(e => e.date + '_' + e.book));
-          const newRows = cloudData.filter(r => !localKeys.has(r.date + '_' + r.book));
-          existing.push(...newRows);
-          DB.set(localKey, existing);
-          downloaded += newRows.length;
-        } else if(tableName === 'health_records') {
-          rows.forEach(r => {
-            if(r.record_date) DB.set('body_state_' + r.record_date, {
-              sleepHours: r.sleep_hours, sleepQuality: r.sleep_quality,
-              energy: r.energy_score, fatigue: r.fatigue_level
-            });
-          });
-          downloaded += rows.length;
-        }
+        downloaded += applyDownload(tableName, rows);
       } catch(e) {
         const errInfo = this._handleError(`下载 ${tableName}`, e);
         errors++;
