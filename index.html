@@ -10806,40 +10806,43 @@ function getDeviceInfo() {
 // Register Service Worker
 function registerSw() {
   if(!('serviceWorker' in navigator)) return;
-  
-  // Register with cache-busting version param
+
+  // 暂时关闭Service Worker（用户手动停用以排查移动端问题）
+  console.log('[PWA] Service Worker 暂时关闭');
+  return;
+
+  /*
   const swUrl = 'service-worker.js?v=' + APP_VERSION;
   navigator.serviceWorker.register(swUrl).then(reg => {
     console.log('[PWA] Service Worker 已注册', reg.scope);
-    
-    // Listen for SW messages (sync, update notifications)
+
     navigator.serviceWorker.addEventListener('message', (event) => {
       if(event.data?.type === 'SYNC_TRIGGER' && DATA_CONFIG.mode === 'cloud') {
         syncManager.syncAll();
       }
     });
-    
+
     // === Auto-update when new SW is found ===
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       console.log('[PWA] 检测到新版本，正在安装...');
-      
+
       newSW.addEventListener('statechange', () => {
         if(newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          // New SW is installed but waiting — send skipWaiting and reload
           console.log('[PWA] 新版本已就绪，自动刷新应用');
           newSW.postMessage({ type: 'SKIP_WAITING' });
-          // Brief delay then reload to use new version
           setTimeout(() => window.location.reload(), 500);
         }
       });
     });
-    
   }).catch(err => {
     console.warn('[PWA] Service Worker 注册失败:', err);
   });
-  
-  // === Auto-reload when controlled by new SW ===
+  */
+}
+
+// === Auto-reload when controlled by new SW ===
+if('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     console.log('[PWA] 新 Service Worker 已激活，页面将刷新');
     window.location.reload();
