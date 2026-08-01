@@ -1850,8 +1850,8 @@ body {
     <div class="form-group"><label class="form-label">昵称</label><input type="text" id="pfNickname" placeholder="自信" onchange="saveProfile()"></div>
     <div class="form-group"><label class="form-label">当前职业</label><input type="text" id="pfCareer" placeholder="如：2026届毕业生" onchange="saveProfile()"></div>
     <div class="form-group"><label class="form-label">目标方向</label><input type="text" id="pfGoal" placeholder="如：新媒体运营" onchange="saveProfile()"></div>
-    <div class="form-group"><label class="form-label">长期目标</label><textarea id="pfLongGoal" placeholder="如：独立运营品牌内容+个人IP" onchange="saveProfile()" style="min-height:50px;"></textarea></div>
-    <div class="form-group"><label class="form-label">个人简介</label><textarea id="pfBio" placeholder="介绍一下自己..." onchange="saveProfile()"></textarea></div>
+    <div class="form-group"><label class="form-label">长期目标 <button type="button" class="voice-btn" data-voice-target="pfLongGoal" onclick="startVoiceInput('pfLongGoal')" title="语音输入">🎤</button></label><textarea id="pfLongGoal" placeholder="如：独立运营品牌内容+个人IP" onchange="saveProfile()" style="min-height:50px;"></textarea></div>
+    <div class="form-group"><label class="form-label">个人简介 <button type="button" class="voice-btn" data-voice-target="pfBio" onclick="startVoiceInput('pfBio')" title="语音输入">🎤</button></label><textarea id="pfBio" placeholder="介绍一下自己..." onchange="saveProfile()"></textarea></div>
   </div>
 
   <!-- 成长档案 -->
@@ -2095,7 +2095,7 @@ body {
     <div class="form-group"><label class="form-label">新增词汇（用逗号分隔）</label><textarea id="edNewWords" placeholder="progress, pronunciation, determine..."></textarea></div>
     <div class="form-group"><label class="form-label">重点表达（用逗号分隔）</label><input type="text" id="edPhrases" placeholder="make up one's mind, be interested in..."></div>
     <div class="form-group"><label class="form-label">口语练习时间（分钟）</label><input type="number" id="edSpeaking" placeholder="0"></div>
-    <div class="form-group"><label class="form-label">遇到的问题 / 我的感受</label><textarea id="edNote" placeholder="今天学习有什么困难？有什么收获？"></textarea></div>
+    <div class="form-group"><label class="form-label">遇到的问题 / 我的感受 <button type="button" class="voice-btn" data-voice-target="edNote" onclick="startVoiceInput('edNote')" title="语音输入">🎤</button></label><textarea id="edNote" placeholder="今天学习有什么困难？有什么收获？"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('engDailyModal')">取消</button>
       <button class="btn btn-primary" onclick="saveEngDaily()">保存</button>
@@ -2265,7 +2265,7 @@ body {
         <option value="reject">未通过</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">JD分析</label><textarea id="jaJD" placeholder="岗位要求、匹配度分析..."></textarea></div>
+    <div class="form-group"><label class="form-label">JD分析 <button type="button" class="voice-btn" data-voice-target="jaJD" onclick="startVoiceInput('jaJD')" title="语音输入">🎤</button></label><textarea id="jaJD" placeholder="岗位要求、匹配度分析..."></textarea></div>
     <div class="form-group"><label class="form-label">简历版本</label><input type="text" id="jaResumeVer" placeholder="如 V2.1 运营版"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('jobApplyModal')">取消</button>
@@ -2303,9 +2303,9 @@ body {
         <option value="fail">未通过</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">面试问题</label><textarea id="jiQuestions" placeholder="被问到的问题..."></textarea></div>
-    <div class="form-group"><label class="form-label">我的回答要点</label><textarea id="jiAnswers" placeholder="你的回答要点..."></textarea></div>
-    <div class="form-group"><label class="form-label">存在不足</label><textarea id="jiWeakness" placeholder="需要改进的地方..."></textarea></div>
+    <div class="form-group"><label class="form-label">面试问题 <button type="button" class="voice-btn" data-voice-target="jiQuestions" onclick="startVoiceInput('jiQuestions')" title="语音输入">🎤</button></label><textarea id="jiQuestions" placeholder="被问到的问题..."></textarea></div>
+    <div class="form-group"><label class="form-label">我的回答要点 <button type="button" class="voice-btn" data-voice-target="jiAnswers" onclick="startVoiceInput('jiAnswers')" title="语音输入">🎤</button></label><textarea id="jiAnswers" placeholder="你的回答要点..."></textarea></div>
+    <div class="form-group"><label class="form-label">存在不足 <button type="button" class="voice-btn" data-voice-target="jiWeakness" onclick="startVoiceInput('jiWeakness')" title="语音输入">🎤</button></label><textarea id="jiWeakness" placeholder="需要改进的地方..."></textarea></div>
     <div class="form-group"><label class="form-label">上传面试笔记/截图</label>
       <input type="file" id="jiFile" accept="image/*,.pdf,.txt" onchange="previewJobFile(this)">
       <div id="jiFilePreview" style="margin-top:6px;font-size:12px;color:var(--text-secondary);"></div>
@@ -2336,13 +2336,13 @@ body {
       </div>
       <input type="hidden" id="jrRate" value="3">
     </div>
-    <div class="form-group"><label class="form-label">哪些问题回答不好</label><textarea id="jrWeakQuestions" placeholder="回顾那些你觉得自己回答不够好的问题..."></textarea></div>
+    <div class="form-group"><label class="form-label">哪些问题回答不好 <button type="button" class="voice-btn" data-voice-target="jrWeakQuestions" onclick="startVoiceInput('jrWeakQuestions')" title="语音输入">🎤</button></label><textarea id="jrWeakQuestions" placeholder="回顾那些你觉得自己回答不够好的问题..."></textarea></div>
     <div class="form-group"><label class="form-label">面试录音/笔记</label>
       <input type="file" id="jrFile" accept="audio/*,image/*,.pdf,.txt">
       <div id="jrFilePreview" style="margin-top:6px;font-size:12px;color:var(--text-secondary);"></div>
     </div>
     <div class="form-group"><label class="form-label">AI 分析结果 (自动生成)</label><textarea id="jrAiAnalysis" placeholder="AI会自动分析你的面试表现...\n\n维度：表达清晰度 / 逻辑结构 / 回答完整度 / 自信程度 / 岗位匹配度" style="min-height:100px;"></textarea></div>
-    <div class="form-group"><label class="form-label">下一次改进方向</label><textarea id="jrNextStep" placeholder="基于本次面试，下次需要改进什么？"></textarea></div>
+    <div class="form-group"><label class="form-label">下一次改进方向 <button type="button" class="voice-btn" data-voice-target="jrNextStep" onclick="startVoiceInput('jrNextStep')" title="语音输入">🎤</button></label><textarea id="jrNextStep" placeholder="基于本次面试，下次需要改进什么？"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('jobReviewModal')">取消</button>
       <button class="btn btn-primary" onclick="saveJobReview()">保存复盘</button>
@@ -2446,8 +2446,8 @@ body {
         <option value="新媒体运营类">🚀 新媒体运营类（选题/爆款/标题/优化）</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">核心功能</label><textarea id="aiToolCore" placeholder="这个工具主要能做什么？"></textarea></div>
-    <div class="form-group"><label class="form-label">我的使用场景</label><textarea id="aiToolScene" placeholder="我主要在什么场景下使用它？"></textarea></div>
+    <div class="form-group"><label class="form-label">核心功能 <button type="button" class="voice-btn" data-voice-target="aiToolCore" onclick="startVoiceInput('aiToolCore')" title="语音输入">🎤</button></label><textarea id="aiToolCore" placeholder="这个工具主要能做什么？"></textarea></div>
+    <div class="form-group"><label class="form-label">我的使用场景 <button type="button" class="voice-btn" data-voice-target="aiToolScene" onclick="startVoiceInput('aiToolScene')" title="语音输入">🎤</button></label><textarea id="aiToolScene" placeholder="我主要在什么场景下使用它？"></textarea></div>
     <div class="form-group"><label class="form-label">掌握程度</label>
       <select id="aiToolMastery">
         <option value="1">⭐ 初学 — 刚接触，不太熟练</option>
@@ -2457,7 +2457,7 @@ body {
         <option value="5">⭐⭐⭐⭐⭐ 专家 — 能教别人使用</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">下一步学习方向</label><textarea id="aiToolNext" placeholder="还想学什么高级用法？"></textarea></div>
+    <div class="form-group"><label class="form-label">下一步学习方向 <button type="button" class="voice-btn" data-voice-target="aiToolNext" onclick="startVoiceInput('aiToolNext')" title="语音输入">🎤</button></label><textarea id="aiToolNext" placeholder="还想学什么高级用法？"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('aiToolModal')">取消</button>
       <button class="btn btn-primary" onclick="saveAiTool()">保存</button>
@@ -2473,9 +2473,9 @@ body {
     <div class="form-group"><label class="form-label">使用工具</label><input type="text" id="aiTaskTool" placeholder="如 ChatGPT + 剪映"></div>
     <div class="form-group"><label class="form-label">我的提示词（Prompt）</label><textarea id="aiTaskPrompt" placeholder="粘贴你使用的提示词..."></textarea></div>
     <div class="form-group"><label class="form-label">AI生成结果</label><textarea id="aiTaskOutput" placeholder="AI生成了什么？粘贴结果..."></textarea></div>
-    <div class="form-group"><label class="form-label">最终成果</label><textarea id="aiTaskResult" placeholder="经过人工优化后的最终产出..."></textarea></div>
+    <div class="form-group"><label class="form-label">最终成果 <button type="button" class="voice-btn" data-voice-target="aiTaskResult" onclick="startVoiceInput('aiTaskResult')" title="语音输入">🎤</button></label><textarea id="aiTaskResult" placeholder="经过人工优化后的最终产出..."></textarea></div>
     <div class="form-group"><label class="form-label">效率提升</label><input type="text" id="aiTaskEfficiency" placeholder="如：原3小时 → 现30分钟"></div>
-    <div class="form-group"><label class="form-label">任务复盘</label><textarea id="aiTaskReview" placeholder="这个工具解决了什么问题？未来如何应用到工作中？"></textarea></div>
+    <div class="form-group"><label class="form-label">任务复盘 <button type="button" class="voice-btn" data-voice-target="aiTaskReview" onclick="startVoiceInput('aiTaskReview')" title="语音输入">🎤</button></label><textarea id="aiTaskReview" placeholder="这个工具解决了什么问题？未来如何应用到工作中？"></textarea></div>
     <div class="form-group"><label class="form-label">日期</label><input type="date" id="aiTaskDate"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('aiTaskModal')">取消</button>
@@ -2489,11 +2489,11 @@ body {
   <div class="modal">
     <div class="modal-title">🔄 新增工作流</div>
     <div class="form-group"><label class="form-label">工作流名称</label><input type="text" id="aiFlowName" placeholder="如 小红书内容生产全流程"></div>
-    <div class="form-group"><label class="form-label">完整流程（用→分隔步骤）</label><textarea id="aiFlowSteps" placeholder="选题 → 文案撰写 → 图片设计 → 发布 → 数据分析" style="font-family:monospace;"></textarea></div>
+    <div class="form-group"><label class="form-label">完整流程（用→分隔步骤） <button type="button" class="voice-btn" data-voice-target="aiFlowSteps" onclick="startVoiceInput('aiFlowSteps')" title="语音输入">🎤</button></label><textarea id="aiFlowSteps" placeholder="选题 → 文案撰写 → 图片设计 → 发布 → 数据分析" style="font-family:monospace;"></textarea></div>
     <div class="form-group"><label class="form-label">使用工具</label><input type="text" id="aiFlowTools" placeholder="用到了哪些工具？"></div>
     <div class="form-group"><label class="form-label">节省时间</label><input type="text" id="aiFlowTime" placeholder="如：从4小时缩短到1小时"></div>
-    <div class="form-group"><label class="form-label">适用场景</label><textarea id="aiFlowScene" placeholder="这个流程可以用在哪些工作里？"></textarea></div>
-    <div class="form-group"><label class="form-label">优化方向</label><textarea id="aiFlowOptimize" placeholder="还可以怎么优化？"></textarea></div>
+    <div class="form-group"><label class="form-label">适用场景 <button type="button" class="voice-btn" data-voice-target="aiFlowScene" onclick="startVoiceInput('aiFlowScene')" title="语音输入">🎤</button></label><textarea id="aiFlowScene" placeholder="这个流程可以用在哪些工作里？"></textarea></div>
+    <div class="form-group"><label class="form-label">优化方向 <button type="button" class="voice-btn" data-voice-target="aiFlowOptimize" onclick="startVoiceInput('aiFlowOptimize')" title="语音输入">🎤</button></label><textarea id="aiFlowOptimize" placeholder="还可以怎么优化？"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('aiFlowModal')">取消</button>
       <button class="btn btn-primary" onclick="saveAiFlow()">保存</button>
@@ -2517,7 +2517,7 @@ body {
       </select>
     </div>
     <div class="form-group"><label class="form-label">提示词内容</label><textarea id="aiPromptContent" placeholder="将完整的提示词粘贴到这里..." style="min-height:100px;font-family:monospace;"></textarea></div>
-    <div class="form-group"><label class="form-label">适用场景</label><textarea id="aiPromptScene" placeholder="什么时候用这个提示词？"></textarea></div>
+    <div class="form-group"><label class="form-label">适用场景 <button type="button" class="voice-btn" data-voice-target="aiPromptScene" onclick="startVoiceInput('aiPromptScene')" title="语音输入">🎤</button></label><textarea id="aiPromptScene" placeholder="什么时候用这个提示词？"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('aiPromptModal')">取消</button>
       <button class="btn btn-primary" onclick="saveAiPrompt()">保存</button>
@@ -2566,7 +2566,7 @@ body {
       <div class="form-group"><label class="form-label">我的兴趣</label><input type="text" id="xhsInterest" placeholder="如：AI工具、个人成长、读书" onchange="saveXhsConfig()"></div>
       <div class="form-group"><label class="form-label">我的技能</label><input type="text" id="xhsSkill" placeholder="如：内容创作、短视频、AI应用" onchange="saveXhsConfig()"></div>
       <div class="form-group"><label class="form-label">目标用户</label><input type="text" id="xhsTarget" placeholder="如：应届毕业生、想转行新媒体的人" onchange="saveXhsConfig()"></div>
-      <div class="form-group"><label class="form-label">账号简介</label><textarea id="xhsBio" placeholder="你的账号简介" onchange="saveXhsConfig()"></textarea></div>
+      <div class="form-group"><label class="form-label">账号简介 <button type="button" class="voice-btn" data-voice-target="xhsBio" onclick="startVoiceInput('xhsBio')" title="语音输入">🎤</button></label><textarea id="xhsBio" placeholder="你的账号简介" onchange="saveXhsConfig()"></textarea></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="analyzeXhsPositioning()">✨ AI分析定位</button>
         <button class="btn btn-outline" onclick="saveXhsConfig()">💾 保存</button>
@@ -2651,7 +2651,7 @@ body {
       </select>
     </div>
     <div class="form-group"><label class="form-label">数据表现</label><input type="text" id="xhsData" placeholder="点赞、收藏、评论数据"></div>
-    <div class="form-group"><label class="form-label">复盘</label><textarea id="xhsReview" placeholder="这次做得好的地方、需要改进的..."></textarea></div>
+    <div class="form-group"><label class="form-label">复盘 <button type="button" class="voice-btn" data-voice-target="xhsReview" onclick="startVoiceInput('xhsReview')" title="语音输入">🎤</button></label><textarea id="xhsReview" placeholder="这次做得好的地方、需要改进的..."></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('xhsModal')">取消</button>
       <button class="btn btn-primary" onclick="saveXhsRecord()">保存</button>
@@ -2671,7 +2671,7 @@ body {
         <option value="生活">🌱 生活观察</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">你的想法</label><textarea id="xhsIdeaText" placeholder="描述你的灵感..." style="min-height:60px;"></textarea></div>
+    <div class="form-group"><label class="form-label">你的想法 <button type="button" class="voice-btn" data-voice-target="xhsIdeaText" onclick="startVoiceInput('xhsIdeaText')" title="语音输入">🎤</button></label><textarea id="xhsIdeaText" placeholder="描述你的灵感..." style="min-height:60px;"></textarea></div>
     <div class="form-group"><label class="form-label">状态</label>
       <select id="xhsIdeaStatus">
         <option value="idea">💡 灵感</option>
@@ -2687,7 +2687,7 @@ body {
       <div id="xhsIdeaAiContent"></div>
     </div>
     <div class="form-group"><label class="form-label">标题方向</label><input type="text" id="xhsIdeaTitle" placeholder="AI自动生成或手动填写"></div>
-    <div class="form-group"><label class="form-label">内容框架</label><textarea id="xhsIdeaFrame" placeholder="内容结构和要点..."></textarea></div>
+    <div class="form-group"><label class="form-label">内容框架 <button type="button" class="voice-btn" data-voice-target="xhsIdeaFrame" onclick="startVoiceInput('xhsIdeaFrame')" title="语音输入">🎤</button></label><textarea id="xhsIdeaFrame" placeholder="内容结构和要点..."></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('xhsIdeaModal')">取消</button>
       <button class="btn btn-primary" onclick="saveXhsIdea()">保存灵感</button>
@@ -2707,7 +2707,7 @@ body {
         <option value="笔记">📝 纯笔记</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">文案</label><textarea id="xpCopy" placeholder="正文文案..." style="min-height:60px;"></textarea></div>
+    <div class="form-group"><label class="form-label">文案 <button type="button" class="voice-btn" data-voice-target="xpCopy" onclick="startVoiceInput('xpCopy')" title="语音输入">🎤</button></label><textarea id="xpCopy" placeholder="正文文案..." style="min-height:60px;"></textarea></div>
     <div class="form-group"><label class="form-label">上传封面/素材</label>
       <input type="file" id="xpFile" accept="image/*" onchange="document.getElementById('xpFileName').textContent=this.files[0]?.name||''">
       <div id="xpFileName" style="font-size:12px;color:var(--text-secondary);margin-top:4px;"></div>
@@ -2746,9 +2746,9 @@ body {
       <button class="btn btn-outline btn-sm" onclick="analyzeXvViral()">🔍 AI分析爆款原因</button>
     </div>
     <div id="xvAiResult" style="display:none;"></div>
-    <div class="form-group"><label class="form-label">标题结构分析</label><textarea id="xvTitle" placeholder="AI自动分析..."></textarea></div>
-    <div class="form-group"><label class="form-label">爆款原因总结</label><textarea id="xvReason" placeholder="为什么这篇能爆？"></textarea></div>
-    <div class="form-group"><label class="form-label">我的收获（可应用到下次创作）</label><textarea id="xvTakeaway" placeholder="学到了什么？如何应用到自己的内容？"></textarea></div>
+    <div class="form-group"><label class="form-label">标题结构分析 <button type="button" class="voice-btn" data-voice-target="xvTitle" onclick="startVoiceInput('xvTitle')" title="语音输入">🎤</button></label><textarea id="xvTitle" placeholder="AI自动分析..."></textarea></div>
+    <div class="form-group"><label class="form-label">爆款原因总结 <button type="button" class="voice-btn" data-voice-target="xvReason" onclick="startVoiceInput('xvReason')" title="语音输入">🎤</button></label><textarea id="xvReason" placeholder="为什么这篇能爆？"></textarea></div>
+    <div class="form-group"><label class="form-label">我的收获（可应用到下次创作） <button type="button" class="voice-btn" data-voice-target="xvTakeaway" onclick="startVoiceInput('xvTakeaway')" title="语音输入">🎤</button></label><textarea id="xvTakeaway" placeholder="学到了什么？如何应用到自己的内容？"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('xhsViralModal')">取消</button>
       <button class="btn btn-primary" onclick="saveXhsViral()">保存拆解</button>
@@ -2940,9 +2940,9 @@ body {
         <option value="方法">🔧 方法</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">核心观点/内容</label><textarea id="kcContent" placeholder="写下你的核心观点..." style="min-height:60px;"></textarea></div>
+    <div class="form-group"><label class="form-label">核心观点/内容 <button type="button" class="voice-btn" data-voice-target="kcContent" onclick="startVoiceInput('kcContent')" title="语音输入">🎤</button></label><textarea id="kcContent" placeholder="写下你的核心观点..." style="min-height:60px;"></textarea></div>
     <div class="form-group"><label class="form-label">来源书籍</label><input type="text" id="kcSource" placeholder="来自哪本书？"></div>
-    <div class="form-group"><label class="form-label">我的理解</label><textarea id="kcUnderstanding" placeholder="你是怎么理解这个观点的？"></textarea></div>
+    <div class="form-group"><label class="form-label">我的理解 <button type="button" class="voice-btn" data-voice-target="kcUnderstanding" onclick="startVoiceInput('kcUnderstanding')" title="语音输入">🎤</button></label><textarea id="kcUnderstanding" placeholder="你是怎么理解这个观点的？"></textarea></div>
     <div class="form-group"><label class="form-label">应用场景</label><input type="text" id="kcScene" placeholder="可以应用在哪些地方？如：小红书内容、公众号文章"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('knowledgeCardModal')">取消</button>
@@ -2965,9 +2965,9 @@ body {
   <div id="wechatTabInspiration">
     <div class="card">
       <div class="card-title">💡 今日灵感捕捉</div>
-      <div class="form-group"><label class="form-label">今天发生了什么？</label><textarea id="wiEvent" placeholder="记录今天值得写的事情..." oninput="saveWechatInspiration()"></textarea></div>
-      <div class="form-group"><label class="form-label">我的观察</label><textarea id="wiObservation" placeholder="我注意到了什么..." oninput="saveWechatInspiration()"></textarea></div>
-      <div class="form-group"><label class="form-label">我的思考</label><textarea id="wiThought" placeholder="这让我想到了..." oninput="saveWechatInspiration()"></textarea></div>
+      <div class="form-group"><label class="form-label">今天发生了什么？ <button type="button" class="voice-btn" data-voice-target="wiEvent" onclick="startVoiceInput('wiEvent')" title="语音输入">🎤</button></label><textarea id="wiEvent" placeholder="记录今天值得写的事情..." oninput="saveWechatInspiration()"></textarea></div>
+      <div class="form-group"><label class="form-label">我的观察 <button type="button" class="voice-btn" data-voice-target="wiObservation" onclick="startVoiceInput('wiObservation')" title="语音输入">🎤</button></label><textarea id="wiObservation" placeholder="我注意到了什么..." oninput="saveWechatInspiration()"></textarea></div>
+      <div class="form-group"><label class="form-label">我的思考 <button type="button" class="voice-btn" data-voice-target="wiThought" onclick="startVoiceInput('wiThought')" title="语音输入">🎤</button></label><textarea id="wiThought" placeholder="这让我想到了..." oninput="saveWechatInspiration()"></textarea></div>
       <div class="form-group"><label class="form-label">可以形成什么主题</label><input type="text" id="wiTheme" placeholder="潜在的文章主题" oninput="saveWechatInspiration()"></div>
     </div>
   </div>
@@ -2991,7 +2991,7 @@ body {
     </div>
     <div class="form-group"><label class="form-label">发布时间</label><input type="date" id="waPublishDate"></div>
     <div class="form-group"><label class="form-label">阅读数据</label><input type="text" id="waReadData" placeholder="阅读量、点赞、在看等"></div>
-    <div class="form-group"><label class="form-label">复盘</label><textarea id="waReview" placeholder="文章反馈和改进方向..."></textarea></div>
+    <div class="form-group"><label class="form-label">复盘 <button type="button" class="voice-btn" data-voice-target="waReview" onclick="startVoiceInput('waReview')" title="语音输入">🎤</button></label><textarea id="waReview" placeholder="文章反馈和改进方向..."></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('wechatArticleModal')">取消</button>
       <button class="btn btn-primary" onclick="saveWechatArticle()">保存</button>
@@ -3028,10 +3028,10 @@ body {
 
   <div class="card">
     <div class="card-title">📝 成长总结</div>
-    <div class="form-group"><label class="form-label">本周完成</label><textarea id="wsDone" placeholder="本周完成了哪些重要的事？" oninput="saveWeeklySummary()"></textarea></div>
-    <div class="form-group"><label class="form-label">本周最大进步</label><textarea id="wsHarvest" placeholder="学到了什么新的东西？" oninput="saveWeeklySummary()"></textarea></div>
-    <div class="form-group"><label class="form-label">本周遇到的问题</label><textarea id="wsProblem" placeholder="有什么困难或阻碍？" oninput="saveWeeklySummary()"></textarea></div>
-    <div class="form-group"><label class="form-label">下一周优化方向</label><textarea id="wsNextWeek" placeholder="下周要改变什么？" oninput="saveWeeklySummary()"></textarea></div>
+    <div class="form-group"><label class="form-label">本周完成 <button type="button" class="voice-btn" data-voice-target="wsDone" onclick="startVoiceInput('wsDone')" title="语音输入">🎤</button></label><textarea id="wsDone" placeholder="本周完成了哪些重要的事？" oninput="saveWeeklySummary()"></textarea></div>
+    <div class="form-group"><label class="form-label">本周最大进步 <button type="button" class="voice-btn" data-voice-target="wsHarvest" onclick="startVoiceInput('wsHarvest')" title="语音输入">🎤</button></label><textarea id="wsHarvest" placeholder="学到了什么新的东西？" oninput="saveWeeklySummary()"></textarea></div>
+    <div class="form-group"><label class="form-label">本周遇到的问题 <button type="button" class="voice-btn" data-voice-target="wsProblem" onclick="startVoiceInput('wsProblem')" title="语音输入">🎤</button></label><textarea id="wsProblem" placeholder="有什么困难或阻碍？" oninput="saveWeeklySummary()"></textarea></div>
+    <div class="form-group"><label class="form-label">下一周优化方向 <button type="button" class="voice-btn" data-voice-target="wsNextWeek" onclick="startVoiceInput('wsNextWeek')" title="语音输入">🎤</button></label><textarea id="wsNextWeek" placeholder="下周要改变什么？" oninput="saveWeeklySummary()"></textarea></div>
   </div>
 
   <div class="card">
@@ -3570,27 +3570,27 @@ body {
     </div>
 
     <div class="month-block">
-      <div class="month-header">🎯 这个月我完成了</div>
+      <div class="month-header">🎯 这个月我完成了 <button type="button" class="voice-btn" data-voice-target="monthlyDone" onclick="startVoiceInput('monthlyDone')" title="语音输入">🎤</button></div>
       <textarea id="monthlyDone" style="min-height:80px;" placeholder="记录这个月完成的重要事情..." oninput="saveMonthlyArchive()"></textarea>
     </div>
 
     <div class="month-block">
-      <div class="month-header">💡 这个月我学会了</div>
+      <div class="month-header">💡 这个月我学会了 <button type="button" class="voice-btn" data-voice-target="monthlyLearned" onclick="startVoiceInput('monthlyLearned')" title="语音输入">🎤</button></div>
       <textarea id="monthlyLearned" style="min-height:80px;" placeholder="这个月新掌握的技能或知识..." oninput="saveMonthlyArchive()"></textarea>
     </div>
 
     <div class="month-block">
-      <div class="month-header">🔄 这个月我的改变</div>
+      <div class="month-header">🔄 这个月我的改变 <button type="button" class="voice-btn" data-voice-target="monthlyChanged" onclick="startVoiceInput('monthlyChanged')" title="语音输入">🎤</button></div>
       <textarea id="monthlyChanged" style="min-height:80px;" placeholder="和上个月相比，有什么变化..." oninput="saveMonthlyArchive()"></textarea>
     </div>
 
     <div class="month-block">
-      <div class="month-header">🚀 最大的突破</div>
+      <div class="month-header">🚀 最大的突破 <button type="button" class="voice-btn" data-voice-target="monthlyBreakthrough" onclick="startVoiceInput('monthlyBreakthrough')" title="语音输入">🎤</button></div>
       <textarea id="monthlyBreakthrough" style="min-height:80px;" placeholder="这个月最自豪的一件事..." oninput="saveMonthlyArchive()"></textarea>
     </div>
 
     <div class="month-block">
-      <div class="month-header">🎯 下个月的目标</div>
+      <div class="month-header">🎯 下个月的目标 <button type="button" class="voice-btn" data-voice-target="monthlyNextGoal" onclick="startVoiceInput('monthlyNextGoal')" title="语音输入">🎤</button></div>
       <textarea id="monthlyNextGoal" style="min-height:80px;" placeholder="下个月想实现什么..." oninput="saveMonthlyArchive()"></textarea>
     </div>
 
@@ -3685,7 +3685,7 @@ body {
 
       <!-- Step 5: Personal Output -->
       <div class="nce-step" id="nceStepOutput" style="display:none;">
-        <div class="nce-step-header"><span class="num">5</span> ✍️ 个人化输出</div>
+        <div class="nce-step-header"><span class="num">5</span> ✍️ 个人化输出 <button type="button" class="voice-btn" data-voice-target="nceOutputInput" onclick="startVoiceInput('nceOutputInput')" title="语音输入">🎤</button></div>
         <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">使用上面学到的表达，描述你的生活、工作或想法。</p>
         <div id="nceOutputPrompt" style="background:var(--primary-light);border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:14px;line-height:1.6;"></div>
         <textarea id="nceOutputInput" style="min-height:120px;font-size:14px;line-height:1.7;" placeholder="用英语写下你的想法..." oninput="saveNceOutput()"></textarea>
@@ -3769,6 +3769,7 @@ body {
         <input type="text" id="feedbackModule" placeholder="相关模块（可选）" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #f0dce4;font-size:13px;">
       </div>
       <div class="form-group" style="margin-bottom:8px;">
+        <button type="button" class="voice-btn" data-voice-target="feedbackContent" onclick="startVoiceInput('feedbackContent')" title="语音输入">🎤 语音输入</button>
         <textarea id="feedbackContent" placeholder="请描述你遇到的问题或建议..." style="width:100%;min-height:60px;padding:8px;border-radius:8px;border:1.5px solid #f0dce4;font-size:13px;"></textarea>
       </div>
       <button class="btn btn-primary btn-sm" onclick="submitFeedback()">📤 提交反馈</button>
