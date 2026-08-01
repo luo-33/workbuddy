@@ -1552,6 +1552,31 @@ body {
   :root { --glass-blur: 10px; }
   .glass-bg-decor { filter: blur(50px); }
 }
+
+/* ============================================================
+   语音输入（Speech-to-Text）
+   ============================================================ */
+.voice-btn {
+  background: none;
+  border: 1px solid rgba(196,86,119,.35);
+  border-radius: 8px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .15s;
+  vertical-align: middle;
+}
+.voice-btn:hover { background: rgba(196,86,119,.12); transform: scale(1.08); }
+.voice-btn.recording {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  animation: voicePulse 1s ease-in-out infinite;
+}
+@keyframes voicePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .55; transform: scale(1.12); }
+}
 </style>
 </head>
 <body>
@@ -1927,11 +1952,11 @@ body {
         </div>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">🎯 今日最大的收获</label><textarea id="feedbackHarvest" oninput="saveEmotionFeedback()" placeholder="今天最值得记录的一件事..."></textarea></div>
-    <div class="form-group"><label class="form-label">⚠️ 今天遇到的问题</label><textarea id="feedbackProblem" oninput="saveEmotionFeedback()" placeholder="有什么困难或阻碍..."></textarea></div>
-    <div class="form-group"><label class="form-label">🔧 明天调整</label><textarea id="feedbackAdjust" oninput="saveEmotionFeedback()" placeholder="明天可以在哪些方面做得更好..."></textarea></div>
-    <div class="form-group"><label class="form-label">💬 今日一句话</label><input type="text" id="feedbackOneSentence" oninput="saveEmotionFeedback()" placeholder="用一句话总结今天"></div>
-    <div class="form-group"><label class="form-label">📝 今日备注</label><textarea id="dailyNote" placeholder="其他想记录的事情..." oninput="saveDailyNote()"></textarea></div>
+    <div class="form-group"><label class="form-label">🎯 今日最大的收获 <button type="button" class="voice-btn" data-voice-target="feedbackHarvest" onclick="startVoiceInput('feedbackHarvest')" title="语音输入">🎤</button></label><textarea id="feedbackHarvest" oninput="saveEmotionFeedback()" placeholder="今天最值得记录的一件事..."></textarea></div>
+    <div class="form-group"><label class="form-label">⚠️ 今天遇到的问题 <button type="button" class="voice-btn" data-voice-target="feedbackProblem" onclick="startVoiceInput('feedbackProblem')" title="语音输入">🎤</button></label><textarea id="feedbackProblem" oninput="saveEmotionFeedback()" placeholder="有什么困难或阻碍..."></textarea></div>
+    <div class="form-group"><label class="form-label">🔧 明天调整 <button type="button" class="voice-btn" data-voice-target="feedbackAdjust" onclick="startVoiceInput('feedbackAdjust')" title="语音输入">🎤</button></label><textarea id="feedbackAdjust" oninput="saveEmotionFeedback()" placeholder="明天可以在哪些方面做得更好..."></textarea></div>
+    <div class="form-group"><label class="form-label">💬 今日一句话 <button type="button" class="voice-btn" data-voice-target="feedbackOneSentence" onclick="startVoiceInput('feedbackOneSentence')" title="语音输入">🎤</button></label><input type="text" id="feedbackOneSentence" oninput="saveEmotionFeedback()" placeholder="用一句话总结今天"></div>
+    <div class="form-group"><label class="form-label">📝 今日备注 <button type="button" class="voice-btn" data-voice-target="dailyNote" onclick="startVoiceInput('dailyNote')" title="语音输入">🎤</button></label><textarea id="dailyNote" placeholder="其他想记录的事情..." oninput="saveDailyNote()"></textarea></div>
   </div>
 
   <!-- Today's XP Summary -->
@@ -5288,6 +5313,94 @@ function saveEmotionFeedback() {
     adjust: document.getElementById('feedbackAdjust').value,
     oneSentence: document.getElementById('feedbackOneSentence').value,
   });
+}
+
+// ========== VOICE INPUT (Speech-to-Text) ==========
+let _voiceRec = null;
+let _voiceTarget = null;
+
+function startVoiceInput(targetId) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const target = document.getElementById(targetId);
+  if(!target) return;
+
+  // 不支持语音识别
+  if(!SR) {
+    showOcrToast('⚠️ 当前浏览器不支持语音输入，请使用 Chrome / Edge');
+    return;
+  }
+
+  // 正在录音中 → 再次点击 = 停止
+  if(_voiceRec && _voiceTarget === targetId) {
+    _voiceRec.stop();
+    return;
+  }
+
+  // 其他字段正在录音 → 先停止
+  if(_voiceRec) {
+    try { _voiceRec.stop(); } catch(e) {}
+    const prevBtn = document.querySelector(`[data-voice-target="${_voiceTarget}"]`);
+    if(prevBtn) prevBtn.classList.remove('recording');
+  }
+
+  const rec = new SR();
+  rec.lang = 'zh-CN';
+  rec.continuous = false;
+  rec.interimResults = true;
+  _voiceRec = rec;
+  _voiceTarget = targetId;
+
+  const btn = document.querySelector(`[data-voice-target="${targetId}"]`);
+  if(btn) btn.classList.add('recording');
+  showOcrToast('🎤 正在聆听... 说完后自动停止，或再点一次结束');
+
+  let finalText = target.value ? target.value.replace(/\s+$/, '') : '';
+
+  rec.onresult = (e) => {
+    let interim = '';
+    for(let i = e.resultIndex; i < e.results.length; i++) {
+      if(e.results[i].isFinal) finalText += (finalText && !finalText.endsWith('。') && !finalText.endsWith('，') && !finalText.endsWith(' ') ? '，' : '') + e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    target.value = finalText + interim;
+    target.dispatchEvent(new Event('input'));
+  };
+
+  rec.onend = () => {
+    if(btn) btn.classList.remove('recording');
+    _voiceRec = null;
+    _voiceTarget = null;
+    showOcrToast('✅ 语音输入完成');
+  };
+
+  rec.onerror = (e) => {
+    if(btn) btn.classList.remove('recording');
+    _voiceRec = null;
+    _voiceTarget = null;
+    if(e.error === 'not-allowed') showOcrToast('❌ 麦克风权限被拒绝，请在浏览器设置中允许');
+    else if(e.error === 'no-speech') showOcrToast('⚠️ 未检测到语音，请再试一次');
+    else if(e.error === 'network') showOcrToast('⚠️ 语音识别服务不可用（需要网络）');
+    else showOcrToast('⚠️ 语音识别失败: ' + e.error);
+  };
+
+  try { rec.start(); }
+  catch(err) {
+    if(btn) btn.classList.remove('recording');
+    _voiceRec = null;
+    _voiceTarget = null;
+    showOcrToast('⚠️ 语音启动失败，请重试');
+  }
+}
+
+// 初始化：检测浏览器是否支持语音，不支持则隐藏所有 🎤 按钮
+function initVoiceSupport() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) {
+    document.querySelectorAll('.voice-btn').forEach(btn => {
+      btn.style.display = 'none';
+    });
+    console.warn('[Voice] 当前浏览器不支持 SpeechRecognition，语音按钮已隐藏');
+  }
 }
 
 // ========== MONTHLY ARCHIVE ==========
@@ -11256,6 +11369,9 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   // ===== Multi-platform auto-sync =====
+
+  // Init voice input support (hide 🎤 buttons if browser unsupported)
+  initVoiceSupport();
 
   // 1. Auto-sync when app comes to foreground (mobile-friendly)
   document.addEventListener('visibilitychange', () => {
