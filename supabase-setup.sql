@@ -210,10 +210,11 @@ CREATE TABLE IF NOT EXISTS achievements (
 -- ============================================================
 -- RLS 安全策略（用户只能读写自己的数据）
 -- ============================================================
+-- 17 张数据表：使用 user_id 列（profiles 单独处理，见下方）
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['profiles','daily_plans','english_records','nce_records','ai_tools','ai_tasks','job_records','interview_records','reading_records','knowledge_cards','wechat_articles','xhs_records','health_records','nutrition_records','exercise_records','finance_records','weekly_reviews','achievements']
+  FOREACH t IN ARRAY ARRAY['daily_plans','english_records','nce_records','ai_tools','ai_tasks','job_records','interview_records','reading_records','knowledge_cards','wechat_articles','xhs_records','health_records','nutrition_records','exercise_records','finance_records','weekly_reviews','achievements']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', t);
     EXECUTE format('DROP POLICY IF EXISTS "%I_own" ON %I;', t, t);
@@ -221,7 +222,8 @@ BEGIN
   END LOOP;
 END $$;
 
--- profiles 表用 id 列（不是 user_id）
+-- profiles 表用 id 列（不是 user_id），单独创建策略
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "profiles_own" ON profiles;
 CREATE POLICY "profiles_own" ON profiles
   FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
