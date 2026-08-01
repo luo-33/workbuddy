@@ -4545,8 +4545,11 @@ function calcStreak() {
     const d = new Date(today); d.setDate(today.getDate()-i);
     const key = d.toISOString().slice(0,10);
     const goals = DB.get('goals_'+key);
-    if(goals && goals.some(g=>g.done)) streak++;
-    else break;
+    if(Array.isArray(goals) && goals.some(g=>g.done)) {
+    streak++;
+} else {
+    break;
+}
   }
   return streak;
 }
@@ -5584,8 +5587,9 @@ function refreshEnglish() {
   renderEngAnalysis();
 }
 
-function calcStreak(recs) {
-  if(!recs.length) return 0;
+function calcStreak(recs = []) {
+  if(!Array.isArray(recs) || recs.length === 0) return 0;
+
   const dates = [...new Set(recs.map(r=>r.date))].sort().reverse();
   let streak = 0;
   const today = todayStr();
