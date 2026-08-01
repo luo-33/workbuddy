@@ -10346,6 +10346,9 @@ const syncManager = {
     } else if(error.code === '42501') {
       errCode = 'PERMISSION';
       friendlyMsg = '⚠️ 权限拒绝，请检查数据库RLS策略';
+    } else if(error.code === 'PGRST205' || (error.message && (error.message.includes('relation') || error.message.includes('could not find the table') || error.message.includes('does not exist')))) {
+      errCode = 'TABLE_NOT_FOUND';
+      friendlyMsg = '⚠️ 数据库表不存在！请在 Supabase SQL Editor 中运行建表脚本（项目里有 supabase-setup.sql）';
     } else if(error.message && error.message.includes('JWT')) {
       errCode = 'AUTH_TOKEN';
       friendlyMsg = '⚠️ 认证令牌已过期，请重新登录';
