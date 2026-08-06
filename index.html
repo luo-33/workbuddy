@@ -4516,7 +4516,7 @@ function refreshDashboard() {
   // Level & XP (from existing system)
   const totalXp = calcTotalXp();
   const todayXp = calcTodayXp();
-  const lv = calcLevel(totalXp);
+  const lv = getLevel(totalXp);
   document.getElementById('statLevel').textContent = lv ? lv.short : 'Lv.1';
   document.getElementById('statXp').textContent = totalXp;
 
@@ -10514,18 +10514,21 @@ function updateAuthUI() {
 }
 
 function ensureProfile(userId) {
-  // Check if profile exists in Supabase
-  supabaseClient.from('profiles').select('user_id').eq('user_id', userId).then(({ data, error }) => {
+  // profiles 表用 id 列（主键 = auth.users.id），不是 user_id
+  supabaseClient.from('profiles').select('id').eq('id', userId).then(({ data, error }) => {
     if(error || !data || data.length === 0) {
       // Create profile
       const localProfile = DB.get('user_profile', {});
       supabaseClient.from('profiles').insert({
-        user_id: userId,
+        id: userId,
         nickname: localProfile.nickname || '用户',
         career: localProfile.career || null,
-        goal: localProfile.goal || null
+        goal: localProfile.goal || null,
+        long_goal: localProfile.longGoal || null,
+        bio: localProfile.bio || null
       }).then(({ error: insertError }) => {
         if(insertError) console.error('[Supabase] 创建profile失败:', insertError);
+        else console.log('[Supabase] profile已创建');
       });
     } else {
       // Update profile from local data if available
@@ -10534,11 +10537,14 @@ function ensureProfile(userId) {
         supabaseClient.from('profiles').update({
           nickname: localProfile.nickname,
           career: localProfile.career,
-          goal: localProfile.goal
-        }).eq('user_id', userId).then();
+          goal: localProfile.goal,
+          long_goal: localProfile.longGoal,
+          bio: localProfile.bio
+        }).eq('id', userId).then(({ error: upErr }) => {
+          if(upErr) console.warn('[Supabase] profile更新警告:', upErr);
+        });
       }
     }
-    // Also save the local user_id → Supabase user_id mapping
     DB.set('supabase_user_id', userId);
   });
 }
@@ -10769,18 +10775,23 @@ const syncManager = {
     for(const tableName of this._tables) {
       const rows = formatMap[tableName] || [];
       if(rows.length === 0) continue;
-      
+
       for(let i = 0; i < rows.length; i += 50) {
-        const batch = rows.slice(i, i + 50).map(r => ({
-          ...r,
-          user_id: userId,
-          created_at: now,
-          updated_at: now
-        }));
-        
+        const batch = rows.slice(i, i + 50).map(r => {
+          // profiles 表用 id 列（= user_id）；其他表用 user_id 列
+          const base = tableName === 'profiles'
+            ? { ...r, id: userId }
+            : { ...r, user_id: userId };
+          return { ...base, created_at: now, updated_at: now };
+        });
+
         try {
+          // 不同表使用不同 onConflict（避免 409 重复错误）
+          const conflictKeys = tableName === 'daily_plans' ? 'user_id,plan_date,goal_text'
+            : tableName === 'profiles' ? 'id'
+            : 'id';
           const { error } = await supabaseClient.from(tableName).upsert(batch, {
-            onConflict: 'id',
+            onConflict: conflictKeys,
             ignoreDuplicates: false
           });
           if(error) {
