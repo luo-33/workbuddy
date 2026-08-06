@@ -2838,6 +2838,7 @@ body {
       </div>
       <div class="chat-input">
         <input type="text" id="readAiInput" placeholder="分享你的阅读感受或问题..." onkeydown="if(event.key==='Enter')sendReadQuery()">
+        <button type="button" class="voice-btn" data-voice-target="readAiInput" onclick="startVoiceInput('readAiInput')" title="语音输入" style="margin:0;border-radius:0;border:1px solid #f0dce4;border-right:none;">🎤</button>
         <button onclick="sendReadQuery()">➤</button>
       </div>
     </div>
