@@ -10014,7 +10014,7 @@ function refreshProfile() {
   const { uid, profile } = initUser();
   
   // Profile card
-  const lv = calcLevel(calcTotalXp());
+  const lv = getLevel(calcTotalXp());
   document.getElementById('profileLevel').textContent = lv ? lv.short : 'Lv.1';
   document.getElementById('profileName').textContent = profile.nickname || '自信';
   document.getElementById('profileGoal').textContent = 
@@ -11853,7 +11853,7 @@ function refreshGrowthAi() {
   document.getElementById('gaStreak').textContent = calcStreak();
   
   const totalXp = calcTotalXp();
-  const lv = calcLevel(totalXp);
+  const lv = getLevel(totalXp);
   document.getElementById('gaLevel').textContent = lv ? lv.short : 'Lv.1';
   
   gaCalcScore();
