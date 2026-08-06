@@ -1492,9 +1492,6 @@ body {
 .prompt-card,
 .ai-review-insight,
 .daily-report-card,
-.finance-card,
-.health-balance-card,
-.nce-card,
 .chat-bubble,
 .hrqa-card {
   background: var(--glass-bg);
@@ -1540,12 +1537,12 @@ body {
 }
 
 /* 9. 导航项 hover 微玻璃 */
-.nav-item:hover { background: rgba(255,255,255,.45); }
+.nav-item:hover { background: rgba(196,86,119,.10); }
 
 /* 10. 文本可读性：半透明背景上加深文字阴影 */
 .card, .stat-card, .summary-card, .health-review-card, .growth-calendar-wrap,
 .year-review-card, .ai-tool-card, .workflow-card, .prompt-card, .sidebar,
-.modal { text-shadow: 0 1px 0 rgba(255,255,255,.4); }
+.modal { /* text-shadow removed */ }
 
 /* 11. 移动端性能：减少模糊半径 */
 @media (max-width: 767px) {
@@ -2543,7 +2540,7 @@ body {
   <div class="tab-bar" id="socialPlatformBar" style="margin-bottom:8px;flex-wrap:wrap;">
     <button class="tab-btn active" onclick="switchSocialPlatform('小红书',this)">📕 小红书</button>
     <button class="tab-btn" onclick="switchSocialPlatform('抖音',this)">🎵 抖音</button>
-    <button class="tab-btn" onclick="switchSocialPlatform('公众号',this)">📢 公众号</button>
+    
     <button class="tab-btn" onclick="addSocialPlatform()" title="添加新平台" style="color:var(--primary);">➕ 添加平台</button>
   </div>
 
@@ -7454,7 +7451,7 @@ function renderAiReview(lv, tools, tasks, flows, prompts) {
 
 // ========== SOCIAL MEDIA (Multi-Platform Social Media Center) ==========
 let socialPlatform = '小红书';
-const SOCIAL_DEFAULT_PLATFORMS = ['小红书', '抖音', '公众号'];
+const SOCIAL_DEFAULT_PLATFORMS = ['小红书', '抖音'];
 
 // ---- 平台配置管理 ----
 function getSocialConfig() { return DB.get('social_config', {}); }
@@ -7506,7 +7503,7 @@ function switchSocialPlatform(name, btn) {
 
 // 添加自定义平台
 function addSocialPlatform() {
-  const name = prompt('请输入平台名称：\n（如：视频号、B站、知乎、微博）');
+  const name = prompt('请输入平台名称：\n（如：视频号、B站、知乎、微博等）');
   if(!name || !name.trim()) return;
   const name2 = name.trim();
   const platforms = DB.get('social_custom_platforms', []);
