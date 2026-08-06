@@ -1620,7 +1620,7 @@ body {
       <span class="nav-icon">💼</span> 求职管理
     </div>
     <div class="nav-item" data-page="xhs" onclick="switchPage('xhs')">
-      <span class="nav-icon">🎬</span> 小红书运营
+      <span class="nav-icon">🎬</span> 社媒运营
     </div>
     <div class="nav-item" data-page="reading" onclick="switchPage('reading')">
       <span class="nav-icon">📖</span> 阅读计划
@@ -2528,22 +2528,31 @@ body {
 <!-- ===== PAGE: Xiaohongshu ===== -->
 <div class="page" id="page-xhs">
   <div class="section-header">
-    <h2 class="section-title">🎬 个人IP运营中心</h2>
+    <h2 class="section-title">🎬 社媒运营中心</h2>
     <span id="xhsToday" style="color:var(--text-secondary);font-size:14px;"></span>
   </div>
 
-  <!-- 个人IP展示卡片 -->
+  <!-- 个人IP展示卡片（当前平台） -->
   <div class="xhs-ip-card" id="xhsIPCard">
     <div class="ip-name" id="xhsIPName">🌟 你的个人品牌</div>
     <div class="ip-desc" id="xhsIPDesc">设置你的账号定位，打造属于你的个人IP</div>
     <div class="ip-tags" id="xhsIPTags"></div>
   </div>
 
+  <!-- 一级导航：平台 -->
+  <div class="tab-bar" id="socialPlatformBar" style="margin-bottom:8px;flex-wrap:wrap;">
+    <button class="tab-btn active" onclick="switchSocialPlatform('小红书',this)">📕 小红书</button>
+    <button class="tab-btn" onclick="switchSocialPlatform('抖音',this)">🎵 抖音</button>
+    <button class="tab-btn" onclick="switchSocialPlatform('公众号',this)">📢 公众号</button>
+    <button class="tab-btn" onclick="addSocialPlatform()" title="添加新平台" style="color:var(--primary);">➕ 添加平台</button>
+  </div>
+
+  <!-- 二级导航：功能（每个平台共用） -->
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchXhsTab('ideacenter',this)">📍 IP定位中心</button>
-    <button class="tab-btn" onclick="switchXhsTab('ideas',this)">💡 内容灵感库</button>
+    <button class="tab-btn active" onclick="switchXhsTab('ideacenter',this)">📍 个人IP</button>
+    <button class="tab-btn" onclick="switchXhsTab('ideas',this)">💡 灵感库</button>
     <button class="tab-btn" onclick="switchXhsTab('production',this)">🎬 内容生产</button>
-    <button class="tab-btn" onclick="switchXhsTab('viral',this)">🔍 爆款分析</button>
+    <button class="tab-btn" onclick="switchXhsTab('viral',this)">🔍 爆款拆解</button>
     <button class="tab-btn" onclick="switchXhsTab('growth',this)">📊 成长分析</button>
   </div>
 
@@ -2556,11 +2565,7 @@ body {
       </p>
       <div class="form-group"><label class="form-label">账号名称</label><input type="text" id="xhsAccName" placeholder="你的账号名称" onchange="saveXhsConfig()"></div>
       <div class="form-group"><label class="form-label">账号平台</label>
-        <div style="display:flex;gap:8px;" id="xhsPlatforms">
-          <button class="health-meal-btn active" onclick="pickPlatform('小红书',this)">📕 小红书</button>
-          <button class="health-meal-btn" onclick="pickPlatform('抖音',this)">🎵 抖音</button>
-          <button class="health-meal-btn" onclick="pickPlatform('公众号',this)">📢 公众号</button>
-        </div>
+        <input type="text" id="xhsPlatform" value="小红书" style="background:var(--primary-light);font-weight:600;color:var(--primary);" readonly>
       </div>
       <div class="form-group"><label class="form-label">职业方向</label><input type="text" id="xhsCareer" placeholder="如：新媒体运营" onchange="saveXhsConfig()"></div>
       <div class="form-group"><label class="form-label">我的兴趣</label><input type="text" id="xhsInterest" placeholder="如：AI工具、个人成长、读书" onchange="saveXhsConfig()"></div>
@@ -7429,19 +7434,105 @@ function renderAiReview(lv, tools, tasks, flows, prompts) {
   `;
 }
 
-// ========== XIAOHONGSHU (Personal IP System) ==========
+// ========== SOCIAL MEDIA (Multi-Platform Social Media Center) ==========
+let socialPlatform = '小红书';
+const SOCIAL_DEFAULT_PLATFORMS = ['小红书', '抖音', '公众号'];
+
+// ---- 平台配置管理 ----
+function getSocialConfig() { return DB.get('social_config', {}); }
+
+function getCurrentConfig() {
+  const cfg = getSocialConfig();
+  if(!cfg[socialPlatform]) cfg[socialPlatform] = {};
+  return cfg[socialPlatform];
+}
+
+// 按平台过滤列表数据（旧数据无 platform 字段 → 归为小红书）
+function getPlatformData(key) {
+  return DB.get(key, []).filter(r => r && (r.platform || '小红书') === socialPlatform);
+}
+
+// 获取所有平台（默认 + 自定义）
+function getSocialPlatforms() {
+  const set = new Set(SOCIAL_DEFAULT_PLATFORMS);
+  Object.keys(getSocialConfig()).forEach(k => set.add(k));
+  DB.get('social_custom_platforms', []).forEach(p => set.add(p));
+  return [...set];
+}
+
+function platformIcon(p) {
+  const icons = {'小红书':'📕','抖音':'🎵','公众号':'📢','视频号':'📱','B站':'📺','知乎':'💡','微博':'🔵','快手':'🎥','小红书2':'📕'};
+  return icons[p] || '📱';
+}
+
+// 渲染平台导航条
+function renderSocialPlatformBar() {
+  const bar = document.getElementById('socialPlatformBar');
+  if(!bar) return;
+  const platforms = getSocialPlatforms();
+  bar.innerHTML = platforms.map(p =>
+    `<button class="tab-btn${p===socialPlatform?' active':''}" onclick="switchSocialPlatform('${p.replace(/'/g,"\\'")}',this)">${platformIcon(p)} ${p}</button>`
+  ).join('') +
+  `<button class="tab-btn" onclick="addSocialPlatform()" title="添加新平台" style="color:var(--primary);">➕ 添加平台</button>`;
+}
+
+// 切换平台
+function switchSocialPlatform(name, btn) {
+  socialPlatform = name;
+  const pEl = document.getElementById('xhsPlatform');
+  if(pEl) pEl.value = name;
+  renderSocialPlatformBar();
+  refreshXhs();
+  showOcrToast('📱 已切换到「' + name + '」');
+}
+
+// 添加自定义平台
+function addSocialPlatform() {
+  const name = prompt('请输入平台名称：\n（如：视频号、B站、知乎、微博）');
+  if(!name || !name.trim()) return;
+  const name2 = name.trim();
+  const platforms = DB.get('social_custom_platforms', []);
+  if(platforms.includes(name2) || SOCIAL_DEFAULT_PLATFORMS.includes(name2)) {
+    alert('该平台已存在'); return;
+  }
+  platforms.push(name2);
+  DB.set('social_custom_platforms', platforms);
+  renderSocialPlatformBar();
+  switchSocialPlatform(name2);
+  showOcrToast('✅ 已添加平台「' + name2 + '」');
+}
+
+// 数据迁移：旧版单平台数据 → 多平台结构（在 init 时调用一次）
+function migrateSocialData() {
+  const cfg = getSocialConfig();
+  let changed = false;
+  const oldCfg = DB.get('xhs_config', null);
+  if(oldCfg && typeof oldCfg === 'object' && !Array.isArray(oldCfg) && Object.keys(oldCfg).length > 0 && !cfg['小红书']) {
+    cfg['小红书'] = oldCfg;
+    DB.set('social_config', cfg);
+    changed = true;
+  }
+  ['xhs_ideas','xhs_productions','xhs_virals'].forEach(key => {
+    const arr = DB.get(key, []);
+    let c2 = false;
+    arr.forEach(r => { if(r && !r.platform) { r.platform = '小红书'; c2 = true; } });
+    if(c2) { DB.set(key, arr); changed = true; }
+  });
+  if(changed) console.log('[Social] 旧版单平台数据已迁移到多平台结构');
+}
+
 function refreshXhs() {
   document.getElementById('xhsToday').textContent = formatDateLong(todayStr());
-  const config = DB.get('xhs_config',{});
-  const ideas = DB.get('xhs_ideas',[]);
-  const productions = DB.get('xhs_productions',[]);
-  const virals = DB.get('xhs_virals',[]);
-  
+  const config = getCurrentConfig();
+  const ideas = getPlatformData('xhs_ideas');
+  const productions = getPlatformData('xhs_productions');
+  const virals = getPlatformData('xhs_virals');
+
   // Update IP card
-  document.getElementById('xhsIPName').textContent = config.accName ? '🌟 '+config.accName : '🌟 你的个人品牌';
+  document.getElementById('xhsIPName').textContent = config.accName ? '🌟 '+config.accName : '🌟 ' + socialPlatform + ' 账号定位';
   document.getElementById('xhsIPDesc').textContent = config.bio || (config.career ? config.career+' | IP运营中' : '设置你的账号定位，打造属于你的个人IP');
   document.getElementById('xhsIPTags').innerHTML = [config.career, config.interest, config.skill].filter(Boolean).map(t => `<span class="ip-tag">${t}</span>`).join('');
-  
+
   // Fill form fields
   document.getElementById('xhsAccName').value = config.accName||'';
   document.getElementById('xhsCareer').value = config.career||'';
@@ -7449,7 +7540,9 @@ function refreshXhs() {
   document.getElementById('xhsSkill').value = config.skill||'';
   document.getElementById('xhsTarget').value = config.target||'';
   document.getElementById('xhsBio').value = config.bio||'';
-  
+  const pEl = document.getElementById('xhsPlatform');
+  if(pEl) pEl.value = socialPlatform;
+
   // Render tabs
   renderXhsIdeas(ideas);
   renderXhsProductions(productions);
@@ -7467,37 +7560,34 @@ function switchXhsTab(tab, btn) {
 }
 
 function saveXhsConfig() {
-  DB.set('xhs_config',{
+  const cfg = getSocialConfig();
+  cfg[socialPlatform] = {
     accName: document.getElementById('xhsAccName').value,
     career: document.getElementById('xhsCareer').value,
     interest: document.getElementById('xhsInterest').value,
     skill: document.getElementById('xhsSkill').value,
     target: document.getElementById('xhsTarget').value,
     bio: document.getElementById('xhsBio').value,
-  });
+  };
+  DB.set('social_config', cfg);
   refreshXhs();
-  showOcrToast('✅ 配置已保存');
+  showOcrToast('✅ 「' + socialPlatform + '」配置已保存');
 }
 
-let xhsPlatform = '小红书';
-
-function pickPlatform(name, btn) {
-  xhsPlatform = name;
-  document.querySelectorAll('#xhsPlatforms .health-meal-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-}
+// 兼容旧调用
+function pickPlatform(name) { socialPlatform = name; }
 
 function analyzeXhsPositioning() {
   const career = document.getElementById('xhsCareer').value.trim();
   const interest = document.getElementById('xhsInterest').value.trim();
   const skill = document.getElementById('xhsSkill').value.trim();
   const target = document.getElementById('xhsTarget').value.trim();
-  
+
   const el = document.getElementById('xhsPositioningResult');
   el.style.display = 'block';
   el.innerHTML = `
     <div class="card" style="margin-bottom:12px;">
-      <div class="card-title">🤖 AI定位分析</div>
+      <div class="card-title">🤖 AI定位分析（${socialPlatform}）</div>
       <div style="font-size:14px;line-height:1.7;">
         <p><strong>🎯 适合你的账号定位：</strong><br>
         ${career||'新媒体运营'} × ${interest||'个人成长'} × ${skill||'内容创作'}<br>
@@ -7524,7 +7614,7 @@ function filterXhsIdea(filter, btn) {
   xhsIdeaFilter = filter;
   document.querySelectorAll('#xhsTabIdeas .health-meal-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  renderXhsIdeas(DB.get('xhs_ideas',[]));
+  renderXhsIdeas(getPlatformData('xhs_ideas'));
 }
 
 function renderXhsIdeas(ideas) {
@@ -7537,6 +7627,7 @@ function renderXhsIdeas(ideas) {
   el.innerHTML = filtered.slice().reverse().map((r,i) => {
     const statusMap = {idea:'💡 灵感', progress:'⏳ 制作中', done:'✅ 已发布'};
     const typeMap = {idea:'idea', progress:'progress', done:'done'};
+    const realIdx = ideas.indexOf(r);
     return `<div class="xhs-idea-item">
       <div class="ii-header">
         <span class="ii-title">${r.title||'灵感'}</span>
@@ -7546,23 +7637,27 @@ function renderXhsIdeas(ideas) {
       ${r.aiSuggestion ? `<div class="ii-ai">🤖 ${r.aiSuggestion}</div>` : ''}
       ${r.frame ? `<div style="margin-top:4px;font-size:12px;color:#8b6a78;">📋 ${r.frame}</div>` : ''}
       <div style="margin-top:6px;display:flex;gap:6px;">
-        <button class="btn btn-sm btn-outline" onclick="changeIdeaStatus(${ideas.indexOf(r)},'progress')">⏳ 开始制作</button>
-        <button class="btn btn-sm btn-outline" onclick="changeIdeaStatus(${ideas.indexOf(r)},'done')">✅ 标记发布</button>
-        <button class="del-btn" onclick="delXhsIdea(${ideas.indexOf(r)})">🗑</button>
+        <button class="btn btn-sm btn-outline" onclick="changeIdeaStatus(${realIdx},'progress')">⏳ 开始制作</button>
+        <button class="btn btn-sm btn-outline" onclick="changeIdeaStatus(${realIdx},'done')">✅ 标记发布</button>
+        <button class="del-btn" onclick="delXhsIdea(${realIdx})">🗑</button>
       </div>
     </div>`;
   }).join('');
 }
 
 function changeIdeaStatus(idx, status) {
-  const ideas = DB.get('xhs_ideas',[]);
-  if(ideas[idx]) ideas[idx].status = status;
-  DB.set('xhs_ideas', ideas);
-  renderXhsIdeas(ideas);
+  const all = DB.get('xhs_ideas',[]);
+  const target = getPlatformData('xhs_ideas')[idx];
+  if(target) {
+    const realIdx = all.indexOf(target);
+    if(realIdx >= 0) { all[realIdx].status = status; DB.set('xhs_ideas', all); }
+  }
+  renderXhsIdeas(getPlatformData('xhs_ideas'));
 }
 
 function saveXhsIdea() {
   const rec = {
+    platform: socialPlatform,
     source: document.getElementById('xhsIdeaSource').value,
     text: document.getElementById('xhsIdeaText').value,
     status: document.getElementById('xhsIdeaStatus').value,
@@ -7579,14 +7674,17 @@ function saveXhsIdea() {
   clearForm(['xhsIdeaText','xhsIdeaTitle','xhsIdeaFrame']);
   document.getElementById('xhsIdeaAiResult').style.display = 'none';
   refreshXhs();
-  showOcrToast('✅ 灵感已保存');
+  showOcrToast('✅ 灵感已保存到「' + socialPlatform + '」');
 }
 
 function delXhsIdea(idx) {
-  const ideas = DB.get('xhs_ideas',[]);
-  ideas.splice(idx,1);
-  DB.set('xhs_ideas', ideas);
-  renderXhsIdeas(ideas);
+  const all = DB.get('xhs_ideas',[]);
+  const target = getPlatformData('xhs_ideas')[idx];
+  if(target) {
+    const realIdx = all.indexOf(target);
+    if(realIdx >= 0) { all.splice(realIdx,1); DB.set('xhs_ideas', all); }
+  }
+  renderXhsIdeas(getPlatformData('xhs_ideas'));
 }
 
 function generateIdeaAi() {
@@ -7599,13 +7697,13 @@ function generateIdeaAi() {
     '别再'+text.slice(0,6)+'了！试试这个方法'
   ];
   const frame = '1. 引入问题/场景\n2. 我的经历/方法\n3. 核心干货+数据\n4. 总结与互动引导';
-  
+
   document.getElementById('xhsIdeaTitle').value = titles[Math.floor(Math.random()*titles.length)];
   document.getElementById('xhsIdeaFrame').value = frame;
   document.getElementById('xhsIdeaAiContent').innerHTML = `
     <div style="margin-bottom:4px;"><strong>📌 标题方向：</strong>${titles[Math.floor(Math.random()*titles.length)]}</div>
     <div><strong>📋 内容框架：</strong><br>${frame.replace(/\n/g,'<br>')}</div>
-    <div style="margin-top:4px;"><strong>🎯 适合平台：</strong>小红书/抖音/公众号</div>`;
+    <div style="margin-top:4px;"><strong>🎯 适合平台：</strong>${socialPlatform} / 可多平台复用</div>`;
   document.getElementById('xhsIdeaAiResult').style.display = 'block';
 }
 
@@ -7617,7 +7715,7 @@ function renderXhsProductions(productions) {
     return;
   }
   el.innerHTML = productions.slice().reverse().map((r,i)=>{
-    const idx = productions.length-1-i;
+    const realIdx = productions.indexOf(r);
     const statusIcons = {script:'📝', shooting:'📸', editing:'✂️', published:'🚀'};
     return `<div class="record-item">
       <div class="record-item-header">
@@ -7630,7 +7728,7 @@ function renderXhsProductions(productions) {
         ${r.data ? '📊 数据：'+r.data : ''}
       </div>
       <div class="record-actions">
-        <button class="del-btn" onclick="delXhsProduction(${idx})">🗑</button>
+        <button class="del-btn" onclick="delXhsProduction(${realIdx})">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -7638,6 +7736,7 @@ function renderXhsProductions(productions) {
 
 function saveXhsProduction() {
   const rec = {
+    platform: socialPlatform,
     title: document.getElementById('xpTitle').value,
     type: document.getElementById('xpType').value,
     copy: document.getElementById('xpCopy').value,
@@ -7654,13 +7753,16 @@ function saveXhsProduction() {
   clearForm(['xpTitle','xpCopy','xpData']);
   document.getElementById('xpFileName').textContent = '';
   refreshXhs();
-  showOcrToast('✅ 内容已保存');
+  showOcrToast('✅ 内容已保存到「' + socialPlatform + '」');
 }
 
 function delXhsProduction(idx) {
-  const p = DB.get('xhs_productions',[]);
-  p.splice(idx,1);
-  DB.set('xhs_productions', p);
+  const all = DB.get('xhs_productions',[]);
+  const target = getPlatformData('xhs_productions')[idx];
+  if(target) {
+    const realIdx = all.indexOf(target);
+    if(realIdx >= 0) { all.splice(realIdx,1); DB.set('xhs_productions', all); }
+  }
   refreshXhs();
 }
 
@@ -7676,7 +7778,7 @@ function optimizeXpCopy() {
   showOcrToast('✨ 文案已优化');
 }
 
-// ===== 爆款分析 =====
+// ===== 爆款拆解 =====
 function renderXhsVirals(virals) {
   const el = document.getElementById('xhsViralList');
   if(!virals.length) {
@@ -7684,7 +7786,7 @@ function renderXhsVirals(virals) {
     return;
   }
   el.innerHTML = virals.slice().reverse().map((r,i)=>{
-    const idx = virals.length-1-i;
+    const realIdx = virals.indexOf(r);
     return `<div class="xhs-viral-card">
       <div class="vc-title">🔍 ${r.name||'爆款案例'}</div>
       <div class="vc-grid">
@@ -7693,7 +7795,7 @@ function renderXhsVirals(virals) {
         ${r.takeaway ? `<div class="vc-tag" style="grid-column:span 2;"><strong>💡 我的收获：</strong>${r.takeaway}</div>` : ''}
       </div>
       <div class="record-actions" style="margin-top:6px;">
-        <button class="del-btn" onclick="delXhsViral(${idx})">🗑</button>
+        <button class="del-btn" onclick="delXhsViral(${realIdx})">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -7701,6 +7803,7 @@ function renderXhsVirals(virals) {
 
 function saveXhsViral() {
   const rec = {
+    platform: socialPlatform,
     name: document.getElementById('xvName').value,
     fileName: document.getElementById('xvFileName').textContent,
     content: document.getElementById('xvContent').value,
@@ -7718,13 +7821,16 @@ function saveXhsViral() {
   document.getElementById('xvFileName').textContent = '';
   document.getElementById('xvAiResult').style.display = 'none';
   refreshXhs();
-  showOcrToast('✅ 拆解已保存');
+  showOcrToast('✅ 拆解已保存到「' + socialPlatform + '」');
 }
 
 function delXhsViral(idx) {
-  const v = DB.get('xhs_virals',[]);
-  v.splice(idx,1);
-  DB.set('xhs_virals', v);
+  const all = DB.get('xhs_virals',[]);
+  const target = getPlatformData('xhs_virals')[idx];
+  if(target) {
+    const realIdx = all.indexOf(target);
+    if(realIdx >= 0) { all.splice(realIdx,1); DB.set('xhs_virals', all); }
+  }
   refreshXhs();
 }
 
@@ -7743,7 +7849,7 @@ function analyzeXvViral() {
   document.getElementById('xvAiResult').style.display = 'block';
   document.getElementById('xvAiResult').innerHTML = `
     <div class="xhs-viral-card">
-      <div style="font-size:13px;font-weight:600;color:#c45677;margin-bottom:6px;">🤖 AI分析结果</div>
+      <div style="font-size:13px;font-weight:600;color:#c45677;margin-bottom:6px;">🤖 AI分析结果（${socialPlatform}）</div>
       <div class="vc-grid">
         <div class="vc-tag"><strong>📌 标题结构：</strong>${analysis.title}</div>
         <div class="vc-tag"><strong>🎨 封面特点：</strong>${analysis.cover}</div>
@@ -7761,13 +7867,11 @@ function renderXhsGrowth(ideas, productions, virals) {
   const posts = productions.filter(p => p.status === 'published');
   const ideasCount = ideas.length;
   const viralsCount = virals.length;
-  
-  // Weekly stats
+
   const now = new Date();
   const weekAgo = new Date(); weekAgo.setDate(now.getDate()-7);
-  const ws = weekAgo.toISOString().slice(0,10);
   const weekPosts = productions.filter(p => p._ts && p._ts >= weekAgo.getTime());
-  
+
   document.getElementById('xhsGrowthContent').innerHTML = `
     <div class="xhs-growth-card">
       <div class="gg-header">
@@ -7778,7 +7882,7 @@ function renderXhsGrowth(ideas, productions, virals) {
       </div>
     </div>
     <div class="card">
-      <div class="card-title">💡 本周运营总结</div>
+      <div class="card-title">💡 本周运营总结（${socialPlatform}）</div>
       <div style="font-size:14px;line-height:1.7;">
         ${posts.length > 0 ? `
         <p><strong>📊 更新频率：</strong>${weekPosts.length > 0 ? '本周有更新，保持节奏 👍' : '本周暂无新内容发布'}</p>
@@ -7800,6 +7904,7 @@ function renderXhsGrowth(ideas, productions, virals) {
 function saveXhsRecord() {
   /* Keep for backward compatibility with old data */
   const rec = {
+    platform: socialPlatform,
     date: document.getElementById('xhsDate')?.value || todayStr(),
     topic: document.getElementById('xhsTopic')?.value || '',
     title: document.getElementById('xhsTitle')?.value || '',
@@ -9143,7 +9248,7 @@ function analyzeGrammar(text, sentences) {
   if(text.match(/\bnot only\b|\bboth\b|\beither\b|\bneither\b/i)) points.push('并列结构 (not only...but also/both...and)');
   if(text.match(/['']s\b/)) points.push('名词所有格 (\'s) — 表示所属关系');
   if(text.match(/\bwill\b|\bgoing to\b/i)) points.push('将来时 (will/be going to) — 表达未来动作');
-  if(text.match(/\bhave\b|\bhas\b|\bhad\b.*\w+ed\b/)) points.push('完成时 (have/has/had + 过去分词) — ���示已完成动作');
+  if(text.match(/\bhave\b|\bhas\b|\bhad\b.*\w+ed\b/)) points.push('完成时 (have/has/had + 过去分词) — 表示已完成动作');
   if(text.match(/\bso\b.*\bthat\b/i)) points.push('So...that 结构 — 表示"如此...以至于"');
   if(text.match(/\btoo\b.*\bto\b/i)) points.push('Too...to 结构 — 表示"太...而不能"');
   if(text.match(/^\s*(Do|Does|Did|Is|Are|Was|Were|Has|Have|Had|Can|Could|May|Might|Should|Would|Will)\b/im)) points.push('疑问句结构 — 一般疑问句');
@@ -11623,6 +11728,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Init voice input support (hide 🎤 buttons if browser unsupported)
   initVoiceSupport();
+  migrateSocialData();
+  renderSocialPlatformBar();
+  if(typeof refreshXhs === 'function') refreshXhs();
 
   // 1. Auto-sync when app comes to foreground (mobile-friendly)
   document.addEventListener('visibilitychange', () => {
