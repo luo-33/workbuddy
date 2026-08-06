@@ -3252,6 +3252,21 @@ body {
         </div>
       </div>
     </div>
+
+    <!-- 手机运动连接 -->
+    <div style="margin-top:16px;padding:14px;background:linear-gradient(135deg,#e8f5ec,#f0faf2);border-radius:14px;border:1px solid #cde8d6;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:20px;">📲</span>
+        <strong style="color:#2d7a4e;font-size:14px;">连接手机运动数据</strong>
+      </div>
+      <div style="font-size:12px;color:#4a7a5a;line-height:1.7;">
+        <p>💡 <strong>自动导入步数</strong>：在链接末尾添加参数即可自动填充</p>
+        <div style="background:#fff;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:11px;color:#5d3a4f;word-break:break-all;" id="mobileImportLink">https://…/?steps=8000</div>
+        <p>📱 <strong>iOS</strong>：用「快捷指令」→「健康」读步数 → 打开此链接自动导入。<br>
+        🤖 <strong>Android</strong>：可用「自动点击」类 App 定时打开链接。</p>
+        <button class="btn btn-outline btn-sm" onclick="copyMobileLink()" style="margin-top:4px;">📋 复制导入链接</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== TAB: 身体状态 ===== -->
@@ -3384,13 +3399,16 @@ body {
         <option value="饮品">☕ 饮品</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">食物名称</label><input type="text" id="hfFood" placeholder="如：鸡胸肉沙拉"></div>
+    <div class="form-group"><label class="form-label">食物名称</label><input type="text" id="hfFood" placeholder="如：鸡胸肉沙拉" oninput="autoFillFood()">
+      <div id="foodNutriHint" style="display:none;margin-top:6px;padding:8px 10px;background:#f0faf2;border-radius:8px;font-size:12px;color:#2d7a4e;"></div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
       <div class="form-group"><label class="form-label">热量(kcal)</label><input type="number" id="hfCal" placeholder="0"></div>
       <div class="form-group"><label class="form-label">蛋白质(g)</label><input type="number" id="hfProtein" placeholder="0" step="0.1"></div>
       <div class="form-group"><label class="form-label">碳水(g)</label><input type="number" id="hfCarbs" placeholder="0" step="0.1"></div>
       <div class="form-group"><label class="form-label">脂肪(g)</label><input type="number" id="hfFat" placeholder="0" step="0.1"></div>
     </div>
+    <input type="hidden" id="hfAutoFilled" value="0">
     <div class="form-group"><label class="form-label">备注</label><input type="text" id="hfNote" placeholder="可选"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('healthFoodModal')">取消</button>
@@ -8612,6 +8630,188 @@ function saveFinIncome(){
 function delFinIncome(idx){ const r=DB.get('fin_income',[]);r.splice(idx,1);DB.set('fin_income',r);refreshFinance();refreshDashboard(); }
 
 // ========== INTAKE & BURN ==========
+// ========== 食物营养数据库（每100g） ==========
+const FOOD_DB = [
+  {name:'米饭', kcal:116, protein:2.6, carbs:25.9, fat:0.3},
+  {name:'白米饭', kcal:116, protein:2.6, carbs:25.9, fat:0.3},
+  {name:'糙米饭', kcal:112, protein:2.7, carbs:24.0, fat:0.9},
+  {name:'粥', kcal:46, protein:1.1, carbs:9.9, fat:0.3},
+  {name:'白粥', kcal:46, protein:1.1, carbs:9.9, fat:0.3},
+  {name:'小米粥', kcal:46, protein:1.4, carbs:8.4, fat:0.7},
+  {name:'面条', kcal:110, protein:3.9, carbs:22.8, fat:0.4},
+  {name:'挂面', kcal:110, protein:3.9, carbs:22.8, fat:0.4},
+  {name:'馒头', kcal:223, protein:7.0, carbs:47.0, fat:1.1},
+  {name:'花卷', kcal:217, protein:6.4, carbs:45.6, fat:1.0},
+  {name:'包子', kcal:227, protein:7.0, carbs:35.0, fat:8.0},
+  {name:'肉包子', kcal:250, protein:10.0, carbs:35.0, fat:8.0},
+  {name:'饺子', kcal:240, protein:8.0, carbs:28.0, fat:10.0},
+  {name:'油条', kcal:388, protein:6.9, carbs:51.0, fat:17.6},
+  {name:'鸡蛋', kcal:144, protein:13.3, carbs:2.8, fat:8.8},
+  {name:'煮鸡蛋', kcal:144, protein:13.3, carbs:2.8, fat:8.8},
+  {name:'煎蛋', kcal:199, protein:13.6, carbs:1.3, fat:15.3},
+  {name:'牛奶', kcal:54, protein:3.0, carbs:3.4, fat:3.2},
+  {name:'纯牛奶', kcal:54, protein:3.0, carbs:3.4, fat:3.2},
+  {name:'酸奶', kcal:72, protein:2.5, carbs:9.3, fat:2.7},
+  {name:'豆浆', kcal:16, protein:1.8, carbs:1.1, fat:0.7},
+  {name:'豆腐', kcal:84, protein:8.1, carbs:4.2, fat:3.7},
+  {name:'鸡胸肉', kcal:133, protein:24.6, carbs:0.0, fat:5.0},
+  {name:'鸡腿', kcal:181, protein:16.0, carbs:0.0, fat:13.0},
+  {name:'鸡翅', kcal:194, protein:17.4, carbs:4.6, fat:11.8},
+  {name:'猪肉', kcal:395, protein:13.2, carbs:2.4, fat:37.0},
+  {name:'猪瘦肉', kcal:143, protein:20.3, carbs:1.5, fat:6.2},
+  {name:'五花肉', kcal:395, protein:13.2, carbs:2.4, fat:37.0},
+  {name:'牛肉', kcal:125, protein:17.8, carbs:0.2, fat:4.2},
+  {name:'牛排', kcal:230, protein:21.0, carbs:0.0, fat:16.0},
+  {name:'羊肉', kcal:203, protein:19.0, carbs:0.0, fat:14.1},
+  {name:'鱼肉', kcal:113, protein:16.6, carbs:0.0, fat:5.2},
+  {name:'三文鱼', kcal:139, protein:17.2, carbs:0.0, fat:7.8},
+  {name:'虾', kcal:93, protein:18.6, carbs:2.8, fat:0.8},
+  {name:'螃蟹', kcal:95, protein:13.8, carbs:4.7, fat:2.3},
+  {name:'红烧肉', kcal:420, protein:15.0, carbs:8.0, fat:35.0},
+  {name:'糖醋里脊', kcal:250, protein:15.0, carbs:20.0, fat:12.0},
+  {name:'宫保鸡丁', kcal:220, protein:18.0, carbs:10.0, fat:12.0},
+  {name:'鱼香肉丝', kcal:200, protein:12.0, carbs:15.0, fat:10.0},
+  {name:'回锅肉', kcal:280, protein:12.0, carbs:6.0, fat:23.0},
+  {name:'麻婆豆腐', kcal:170, protein:9.0, carbs:7.0, fat:12.0},
+  {name:'番茄炒蛋', kcal:120, protein:7.0, carbs:5.0, fat:8.0},
+  {name:'青椒炒肉', kcal:180, protein:10.0, carbs:6.0, fat:13.0},
+  {name:'西兰花', kcal:36, protein:4.1, carbs:4.3, fat:0.6},
+  {name:'菠菜', kcal:28, protein:2.6, carbs:4.5, fat:0.3},
+  {name:'生菜', kcal:15, protein:1.3, carbs:2.0, fat:0.3},
+  {name:'白菜', kcal:17, protein:1.5, carbs:3.2, fat:0.1},
+  {name:'西红柿', kcal:20, protein:0.9, carbs:3.5, fat:0.2},
+  {name:'黄瓜', kcal:16, protein:0.8, carbs:2.9, fat:0.2},
+  {name:'胡萝卜', kcal:39, protein:1.0, carbs:8.8, fat:0.2},
+  {name:'土豆', kcal:81, protein:2.6, carbs:17.8, fat:0.2},
+  {name:'红薯', kcal:99, protein:1.1, carbs:23.1, fat:0.2},
+  {name:'玉米', kcal:112, protein:4.0, carbs:22.8, fat:1.2},
+  {name:'苹果', kcal:53, protein:0.4, carbs:13.7, fat:0.2},
+  {name:'香蕉', kcal:93, protein:1.4, carbs:22.0, fat:0.2},
+  {name:'橙子', kcal:48, protein:0.8, carbs:11.1, fat:0.2},
+  {name:'葡萄', kcal:45, protein:0.4, carbs:10.3, fat:0.3},
+  {name:'西瓜', kcal:31, protein:0.6, carbs:6.8, fat:0.3},
+  {name:'草莓', kcal:32, protein:1.0, carbs:7.1, fat:0.2},
+  {name:'蓝莓', kcal:57, protein:0.7, carbs:14.5, fat:0.3},
+  {name:'梨', kcal:51, protein:0.3, carbs:13.1, fat:0.1},
+  {name:'桃', kcal:48, protein:0.9, carbs:12.2, fat:0.1},
+  {name:'猕猴桃', kcal:61, protein:0.8, carbs:14.5, fat:0.6},
+  {name:'柚子', kcal:42, protein:0.8, carbs:9.5, fat:0.2},
+  {name:'柠檬', kcal:37, protein:1.1, carbs:6.2, fat:1.2},
+  {name:'面包', kcal:313, protein:8.3, carbs:58.6, fat:5.1},
+  {name:'全麦面包', kcal:246, protein:9.0, carbs:41.0, fat:4.0},
+  {name:'吐司', kcal:313, protein:8.3, carbs:58.6, fat:5.1},
+  {name:'三明治', kcal:250, protein:10.0, carbs:30.0, fat:10.0},
+  {name:'燕麦', kcal:389, protein:16.9, carbs:66.3, fat:6.9},
+  {name:'燕麦片', kcal:389, protein:16.9, carbs:66.3, fat:6.9},
+  {name:'蛋糕', kcal:380, protein:5.0, carbs:45.0, fat:20.0},
+  {name:'饼干', kcal:435, protein:6.0, carbs:70.0, fat:15.0},
+  {name:'巧克力', kcal:546, protein:4.3, carbs:53.4, fat:36.0},
+  {name:'冰淇淋', kcal:207, protein:3.5, carbs:24.0, fat:11.0},
+  {name:'薯片', kcal:548, protein:7.0, carbs:49.0, fat:37.0},
+  {name:'可乐', kcal:43, protein:0.0, carbs:10.6, fat:0.0},
+  {name:'奶茶', kcal:120, protein:1.0, carbs:15.0, fat:6.0},
+  {name:'咖啡', kcal:2, protein:0.1, carbs:0.4, fat:0.0},
+  {name:'拿铁', kcal:90, protein:3.0, carbs:9.0, fat:5.0},
+  {name:'啤酒', kcal:43, protein:0.5, carbs:3.6, fat:0.0},
+  {name:'红酒', kcal:96, protein:0.1, carbs:2.6, fat:0.0},
+  {name:'沙拉', kcal:120, protein:5.0, carbs:10.0, fat:7.0},
+  {name:'蔬菜沙拉', kcal:120, protein:5.0, carbs:10.0, fat:7.0},
+  {name:'汉堡', kcal:295, protein:17.0, carbs:24.0, fat:14.0},
+  {name:'炸鸡', kcal:280, protein:17.0, carbs:12.0, fat:18.0},
+  {name:'披萨', kcal:266, protein:11.0, carbs:33.0, fat:10.0},
+  {name:'寿司', kcal:130, protein:6.0, carbs:20.0, fat:3.0},
+  {name:'拉面', kcal:130, protein:5.0, carbs:20.0, fat:3.0},
+  {name:'牛肉面', kcal:480, protein:18.0, carbs:55.0, fat:12.0},
+  {name:'桂林米粉', kcal:220, protein:8.0, carbs:45.0, fat:2.0},
+  {name:'酸辣粉', kcal:180, protein:5.0, carbs:30.0, fat:5.0},
+  {name:'麻辣烫', kcal:180, protein:10.0, carbs:15.0, fat:9.0},
+  {name:'火锅', kcal:200, protein:15.0, carbs:10.0, fat:12.0},
+  {name:'烧烤', kcal:250, protein:18.0, carbs:8.0, fat:17.0},
+  {name:'烤鸭', kcal:240, protein:19.0, carbs:1.0, fat:18.0},
+  {name:'坚果', kcal:600, protein:15.0, carbs:20.0, fat:50.0},
+  {name:'花生', kcal:567, protein:26.0, carbs:21.0, fat:44.0},
+  {name:'核桃', kcal:654, protein:14.9, carbs:13.7, fat:65.2},
+  {name:'杏仁', kcal:579, protein:21.0, carbs:21.6, fat:49.9},
+  {name:'腰果', kcal:553, protein:18.2, carbs:30.2, fat:43.9},
+  {name:'蜂蜜', kcal:321, protein:0.4, carbs:79.5, fat:1.9},
+  {name:'豆浆油条套餐', kcal:350, protein:10.0, carbs:40.0, fat:15.0},
+  {name:'牛奶燕麦', kcal:220, protein:8.0, carbs:30.0, fat:6.0},
+  {name:'水果拼盘', kcal:150, protein:2.0, carbs:35.0, fat:1.0},
+  {name:'米饭套餐', kcal:550, protein:20.0, carbs:65.0, fat:15.0},
+  {name:'煎蛋三明治', kcal:320, protein:15.0, carbs:30.0, fat:14.0},
+  {name:'鸡胸肉沙拉', kcal:180, protein:25.0, carbs:10.0, fat:5.0},
+  {name:'鸡蛋灌饼', kcal:280, protein:12.0, carbs:30.0, fat:13.0},
+  {name:'手抓饼', kcal:300, protein:8.0, carbs:35.0, fat:14.0},
+  {name:'煎饼果子', kcal:260, protein:10.0, carbs:35.0, fat:9.0},
+  {name:'牛肉饭', kcal:380, protein:22.0, carbs:45.0, fat:12.0},
+  {name:'咖喱鸡饭', kcal:420, protein:20.0, carbs:55.0, fat:14.0},
+  {name:'蛋炒饭', kcal:180, protein:5.0, carbs:25.0, fat:7.0},
+  {name:'扬州炒饭', kcal:220, protein:8.0, carbs:30.0, fat:8.0},
+  {name:'麻辣香锅', kcal:250, protein:15.0, carbs:15.0, fat:15.0},
+  {name:'关东煮', kcal:150, protein:10.0, carbs:15.0, fat:5.0},
+  {name:'汤圆', kcal:230, protein:3.0, carbs:45.0, fat:5.0},
+  {name:'粽子', kcal:195, protein:5.0, carbs:40.0, fat:2.0},
+  {name:'月饼', kcal:410, protein:6.0, carbs:60.0, fat:16.0},
+  {name:'泡面', kcal:470, protein:9.0, carbs:60.0, fat:22.0},
+  {name:'方便面', kcal:470, protein:9.0, carbs:60.0, fat:22.0}
+];
+
+// 查询食物营养（模糊匹配，优先精确/包含，返回每100g数据）
+function lookupFood(name) {
+  if(!name) return null;
+  const n = name.trim().toLowerCase();
+  if(!n) return null;
+  // 合并内置库 + 自定义食物
+  const custom = DB.get('custom_foods', []);
+  const all = FOOD_DB.concat(custom);
+  // 1. 精确匹配
+  let hit = all.find(f => f.name === name.trim());
+  // 2. 包含匹配（内置优先）
+  if(!hit) hit = all.find(f => name.includes(f.name) || f.name.includes(name));
+  // 3. 关键词（如"鸡胸肉饭"匹配"鸡胸肉"）
+  if(!hit) {
+    let best = null;
+    all.forEach(f => {
+      if(n.includes(f.name.toLowerCase()) && (!best || f.name.length > best.name.length)) best = f;
+    });
+    hit = best;
+  }
+  return hit || null;
+}
+
+// 食物名称输入时自动填充营养
+function autoFillFood() {
+  const nameEl = document.getElementById('hfFood');
+  const name = nameEl ? nameEl.value : '';
+  const hintEl = document.getElementById('foodNutriHint');
+  const food = lookupFood(name);
+  if(!food) {
+    if(hintEl) hintEl.style.display = 'none';
+    return;
+  }
+  // 仅当用户还没手动改过营养值时填充
+  const calEl = document.getElementById('hfCal');
+  if(!calEl.value || parseFloat(calEl.value) === 0 || !document.getElementById('hfAutoFilled')) {
+    document.getElementById('hfCal').value = food.kcal;
+    document.getElementById('hfProtein').value = food.protein;
+    document.getElementById('hfCarbs').value = food.carbs;
+    document.getElementById('hfFat').value = food.fat;
+    document.getElementById('hfAutoFilled').value = '1';
+  }
+  if(hintEl) {
+    hintEl.style.display = 'block';
+    hintEl.innerHTML = `📊 <strong>${food.name}</strong>（每100g）：${food.kcal}kcal · 蛋白质${food.protein}g · 碳水${food.carbs}g · 脂肪${food.fat}g`;
+  }
+}
+
+// 保存自定义食物（供下次自动识别）
+function rememberCustomFood(food, rec) {
+  const custom = DB.get('custom_foods', []);
+  if(custom.some(f => f.name === food)) return;
+  custom.push({ name: food, kcal: rec.cal, protein: rec.protein, carbs: rec.carbs, fat: rec.fat });
+  DB.set('custom_foods', custom);
+}
+
 function refreshIntake(){
   const today = todayStr();
   document.getElementById('healthDate').textContent = formatDateLong(today);
@@ -8700,6 +8900,9 @@ function openFoodModal(){
   // Preselect meal based on current time and tab
   const mealMap = {breakfast:'早餐',lunch:'午餐',dinner:'晚餐',snack:'加餐',drink:'饮品'};
   document.getElementById('hfMeal').value = mealMap[currentMealTab] || '早餐';
+  document.getElementById('hfAutoFilled').value = '0';
+  const hint = document.getElementById('foodNutriHint');
+  if(hint) hint.style.display = 'none';
   openModal('healthFoodModal');
 }
 
@@ -8716,11 +8919,15 @@ function saveHealthFood(){
     _ts: Date.now()
   };
   if(!rec.food){ alert('请输入食物名称'); return; }
+  // 记住自定义食物（不在内置库中时，下次输入可自动识别）
+  if(!lookupFood(rec.food)) rememberCustomFood(rec.food, rec);
   const recs = DB.get('intake_records',[]);
   recs.push(rec);
   DB.set('intake_records', recs);
   closeModal('healthFoodModal');
   clearForm(['hfFood','hfCal','hfProtein','hfCarbs','hfFat','hfNote']);
+  const hint = document.getElementById('foodNutriHint');
+  if(hint) hint.style.display = 'none';
   document.getElementById('foodAiResult').style.display = 'none';
   refreshIntake(); refreshDashboard();
 }
@@ -8846,6 +9053,63 @@ function saveSteps(){
   const steps = parseInt(document.getElementById('healthSteps').value)||0;
   DB.set('steps_'+today, steps);
   refreshIntake();
+}
+
+// ===== 手机运动数据导入（URL 参数） =====
+// 支持格式: ?steps=8000&sleep=7.5&weight=60.5&steps2=12000
+// iOS 快捷指令可读取健康数据后通过此链接导入
+function copyMobileLink() {
+  const base = location.href.split('?')[0];
+  const link = base + '?steps=8000&sleep=7.5';
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(() => showOcrToast('✅ 导入链接已复制，替换数字即可用'));
+  } else {
+    const el = document.createElement('textarea');
+    el.value = link; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    showOcrToast('✅ 导入链接已复制');
+  }
+}
+
+function applyMobileImportParams() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const today = todayStr();
+    let imported = false;
+    // 步数
+    const steps = parseInt(params.get('steps'));
+    if(!isNaN(steps) && steps > 0) {
+      DB.set('steps_' + today, steps);
+      const el = document.getElementById('healthSteps');
+      if(el) el.value = steps;
+      imported = true;
+    }
+    // 睡眠时长
+    const sleep = parseFloat(params.get('sleep'));
+    if(!isNaN(sleep) && sleep > 0) {
+      const prev = DB.get('body_state_' + today, {});
+      prev.sleepHours = sleep;
+      DB.set('body_state_' + today, prev);
+      const el = document.getElementById('hsSleepHours');
+      if(el) el.value = sleep;
+      imported = true;
+    }
+    // 体重
+    const weight = parseFloat(params.get('weight'));
+    if(!isNaN(weight) && weight > 0) {
+      const profile = DB.get('health_profile', {});
+      profile.weight = weight;
+      DB.set('health_profile', profile);
+      imported = true;
+    }
+    if(imported) {
+      showOcrToast('📲 已从手机导入运动数据');
+      if(typeof refreshIntake === 'function') refreshIntake();
+      if(typeof refreshHealthGoal === 'function') refreshHealthGoal(DB.get('health_profile',{}));
+    }
+  } catch(e) {
+    console.warn('[Health] URL 参数导入失败:', e);
+  }
 }
 
 // ===== 身体目标 =====
@@ -11731,6 +11995,7 @@ document.addEventListener('DOMContentLoaded', function(){
   migrateSocialData();
   renderSocialPlatformBar();
   if(typeof refreshXhs === 'function') refreshXhs();
+  applyMobileImportParams();
 
   // 1. Auto-sync when app comes to foreground (mobile-friendly)
   document.addEventListener('visibilitychange', () => {
