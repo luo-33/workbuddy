@@ -2962,6 +2962,7 @@ body {
 
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchWechatTab('inspiration',this)">每日灵感</button>
+    <button class="tab-btn" onclick="switchWechatTab('hotspot',this)">📡 热点追踪</button>
     <button class="tab-btn" onclick="switchWechatTab('articles',this)">文章管理</button>
   </div>
 
@@ -2972,6 +2973,73 @@ body {
       <div class="form-group"><label class="form-label">我的观察 <button type="button" class="voice-btn" data-voice-target="wiObservation" onclick="startVoiceInput('wiObservation')" title="语音输入">🎤</button></label><textarea id="wiObservation" placeholder="我注意到了什么..." oninput="saveWechatInspiration()"></textarea></div>
       <div class="form-group"><label class="form-label">我的思考 <button type="button" class="voice-btn" data-voice-target="wiThought" onclick="startVoiceInput('wiThought')" title="语音输入">🎤</button></label><textarea id="wiThought" placeholder="这让我想到了..." oninput="saveWechatInspiration()"></textarea></div>
       <div class="form-group"><label class="form-label">可以形成什么主题</label><input type="text" id="wiTheme" placeholder="潜在的文章主题" oninput="saveWechatInspiration()"></div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: 热点追踪（热点 → 话题 → 对话 → 文章） ===== -->
+  <div id="wechatTabHotspot" style="display:none">
+    <!-- 1. 今日热点 -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">📡 今日热点（粘贴或快速生成）</div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
+        从微博/抖音/知乎等平台复制今天的热搜话题粘贴到这里，或点击「示例热点」快速体验。最多可粘贴 10 条。
+      </p>
+      <div class="form-group"><textarea id="hpInput" placeholder="例：&#10;年轻人开始流行“City Walk”&#10;AI 取代重复性工作引发讨论&#10;2026 毕业生就业趋势分析&#10;……" style="min-height:100px;"></textarea></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="generateHotTopic()">✨ 生成讨论话题</button>
+        <button class="btn btn-outline btn-sm" onclick="fillDemoHotspots()">🎲 示例热点</button>
+        <button class="btn btn-outline btn-sm" onclick="clearHotspotArea()">🗑 清空</button>
+      </div>
+    </div>
+
+    <!-- 2. 今日讨论话题 -->
+    <div id="hpTopicCard" style="display:none;margin-bottom:12px;">
+      <div class="card">
+        <div class="card-title">📌 今日讨论话题</div>
+        <div style="font-size:15px;font-weight:700;color:#c45677;margin-bottom:8px;" id="hpTopicTitle"></div>
+        <div style="font-size:13px;color:#8b6a78;line-height:1.7;margin-bottom:10px;" id="hpTopicSource">来源：微博热搜</div>
+        <div style="background:#fff5f8;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.8;color:#5d3a4f;" id="hpAiOpinion"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="startHotChat()">💬 开始讨论</button>
+          <button class="btn btn-outline btn-sm" onclick="hpRefreshTopic()">🔄 换一个话题</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 对话交流 -->
+    <div id="hpChatCard" style="display:none;margin-bottom:12px;">
+      <div class="card">
+        <div class="card-title">💬 与 AI 讨论「<span id="hpChatTopicLabel" style="color:#c45677;"></span>」</div>
+        <div class="reading-ai-chat" style="border:1px solid #f0e8ec;border-radius:14px;overflow:hidden;">
+          <div class="chat-body" id="hpChatBody" style="max-height:340px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;">
+            <div class="chat-msg ai">
+              <div class="avatar">🤖</div>
+              <div class="content">我们来聊聊这个话题吧。你可以说说你的看法、你的经历，或者任何想到的东西。</div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <input type="text" id="hpChatInput" placeholder="说说你的看法..." onkeydown="if(event.key==='Enter')sendHotChat()">
+            <button type="button" class="voice-btn" data-voice-target="hpChatInput" onclick="startVoiceInput('hpChatInput')" title="语音输入" style="margin:0;">🎤</button>
+            <button onclick="sendHotChat()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 生成文章 -->
+    <div id="hpArticleCard" style="display:none;margin-bottom:12px;">
+      <div class="card">
+        <div class="card-title">📝 生成公众号文章（个人日记风格）</div>
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
+          基于刚才的讨论内容，自动整理成一篇文章。可一键复制到公众号后台。
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-primary btn-sm" onclick="generateHotArticle()">✨ 生成文章</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleArticleDecor()">🎨 简笔画装饰（开/关）</button>
+          <button class="btn btn-outline btn-sm" onclick="copyHotArticle()">📋 复制全文</button>
+        </div>
+        <div id="hpArticlePreview" style="background:#fffdf9;border:1px dashed #f0dce4;border-radius:14px;padding:20px 18px;font-family:Georgia,'Songti SC',serif;font-size:15px;line-height:1.9;color:#4a3f45;white-space:pre-wrap;display:none;"></div>
+      </div>
     </div>
   </div>
 
@@ -8339,10 +8407,268 @@ function refreshWechat() {
 }
 
 function switchWechatTab(tab, btn) {
-  document.querySelectorAll('#page-wechat .tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('#page-wechat .tab-bar .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
   document.getElementById('wechatTabInspiration').style.display = tab==='inspiration'?'block':'none';
+  document.getElementById('wechatTabHotspot').style.display = tab==='hotspot'?'block':'none';
   document.getElementById('wechatTabArticles').style.display = tab==='articles'?'block':'none';
+  // 打开热点追踪时自动加载上次会话
+  if(tab === 'hotspot') restoreHotspotSession();
+}
+
+// ========== 热点追踪（热点 → 话题 → 对话 → 文章） ==========
+let _hpTopic = null;          // 当前话题 {title, source, opinion}
+let _hpChat = [];             // 对话记录 [{role:'user'|'ai', text}]
+let _hpDecorOn = true;        // 简笔画装饰开关
+
+// 示例热点（兜底数据，无真实热搜 API 时使用）
+const HP_DEMO = [
+  '年轻人流行起「City Walk」，用脚步丈量城市',
+  'AI 工具正在改变重复性工作，有人焦虑有人拥抱',
+  '2026 届毕业生求职季开启，新媒体岗位竞争激烈',
+  '「长期主义」成为年轻人新的生活哲学',
+  '读书博主靠 100 本好书年入百万，引发争议',
+  '国产 AI 大模型免费开放，普通人如何抓住机会',
+  '「下班后的 3 小时」决定你的成长速度，你信吗？',
+  '00 后整顿职场还是职场整顿 00 后？'
+];
+
+function fillDemoHotspots() {
+  document.getElementById('hpInput').value = HP_DEMO.join('\n');
+  showOcrToast('🎲 已填入示例热点');
+}
+
+function clearHotspotArea() {
+  document.getElementById('hpInput').value = '';
+  ['hpTopicCard','hpChatCard','hpArticleCard'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+  _hpTopic = null; _hpChat = [];
+  showOcrToast('🗑 已清空');
+}
+
+// 从粘贴的热点中挑选一条，生成讨论话题 + AI 观点（100字左右）
+function generateHotTopic() {
+  const raw = document.getElementById('hpInput').value.trim();
+  let items = raw.split(/\n+/).map(s => s.replace(/^[\d\.\s\-、]+/,'').trim()).filter(Boolean);
+  if(items.length === 0) items = HP_DEMO.slice();
+  if(items.length > 10) items = items.slice(0,10);
+
+  // 随机选一条热点
+  const picked = items[Math.floor(Math.random() * items.length)];
+  const source = ['微博热搜','抖音热榜','知乎热榜','百度热搜'][Math.floor(Math.random()*4)];
+
+  // 生成讨论话题：热点 → 可讨论的问题
+  const questions = [
+    `「${picked}」——你怎么看？`,
+    `聊聊「${picked}」，你有类似的经历吗？`,
+    `关于「${picked}」，你的态度是什么？`,
+    `「${picked}」背后，藏着什么样的趋势？`
+  ];
+  const topicTitle = questions[Math.floor(Math.random()*questions.length)];
+
+  // AI 观点（100字左右，个人化、有态度）
+  const opinions = [
+    `看到「${picked.slice(0,18)}」这个话题，我的第一反应不是站队，而是好奇：它为什么会火？\n\n热点往往是一面镜子，照出的是大家共同的焦虑或渴望。与其急着表态，不如想想这件事和自己的连接点——它提醒了我什么？我能从中学到什么？\n\n我倾向用「观察者」的心态去参与：先理解，再发言。`,
+    `「${picked.slice(0,18)}」这几天讨论度很高。坦白说，我一开始觉得有点吵，但冷静下来想，热点能出现一定有它的土壤。\n\n它可能代表了一种集体情绪，也可能是某个真实困境的缩影。对我这种做内容的人来说，更重要的是抓住情绪背后的需求，而不是追逐表面的流量。\n\n想听听你的看法。`,
+    `关于「${picked.slice(0,18)}」，我的态度比较「慢」：不急着跟风，也不急着否定。\n\n任何现象被推上热搜，往往都有多重原因——有真实的成分，也有被放大的部分。能做的，是把热点当成一次观察社会情绪的窗口，然后回到自己的生活里，用行动回应它。\n\n你怎么想？我们聊聊。`
+  ];
+  const opinion = opinions[Math.floor(Math.random()*opinions.length)];
+
+  _hpTopic = { title: topicTitle, source: '来源：' + source + ' · ' + new Date().toLocaleDateString('zh-CN'), opinion };
+  _hpChat = [];
+
+  document.getElementById('hpTopicTitle').textContent = topicTitle;
+  document.getElementById('hpTopicSource').textContent = _hpTopic.source;
+  document.getElementById('hpAiOpinion').textContent = opinion;
+  document.getElementById('hpTopicCard').style.display = 'block';
+  document.getElementById('hpChatCard').style.display = 'none';
+  document.getElementById('hpArticleCard').style.display = 'none';
+  document.getElementById('hpChatTopicLabel').textContent = topicTitle.slice(0,16) + '…';
+
+  // 保存会话
+  saveHotspotSession();
+  showOcrToast('📌 讨论话题已生成');
+}
+
+function hpRefreshTopic() { generateHotTopic(); }
+
+// 开始对话
+function startHotChat() {
+  if(!_hpTopic) return;
+  document.getElementById('hpChatCard').style.display = 'block';
+  const body = document.getElementById('hpChatBody');
+  body.innerHTML = `
+    <div class="chat-msg ai">
+      <div class="avatar">🤖</div>
+      <div class="content">${_hpTopic.title}<br><br>${_hpTopic.opinion}</div>
+    </div>`;
+  _hpChat = [{role:'ai', text:_hpTopic.title + '\n' + _hpTopic.opinion}];
+  document.getElementById('hpChatInput').focus();
+}
+
+// 发送对话
+function sendHotChat() {
+  const input = document.getElementById('hpChatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const body = document.getElementById('hpChatBody');
+
+  // 用户消息
+  body.innerHTML += `<div class="chat-msg user">
+    <div class="avatar">🙋</div>
+    <div class="content">${escapeHtml(text)}</div>
+  </div>`;
+  _hpChat.push({role:'user', text});
+  input.value = '';
+
+  // AI 回复（基于用户输入的关键词生成相关回应）
+  const reply = generateHotReply(text);
+  setTimeout(() => {
+    body.innerHTML += `<div class="chat-msg ai">
+      <div class="avatar">🤖</div>
+      <div class="content">${escapeHtml(reply)}</div>
+    </div>`;
+    _hpChat.push({role:'ai', text:reply});
+    body.scrollTop = body.scrollHeight;
+  }, 400);
+
+  // 显示生成文章按钮
+  document.getElementById('hpArticleCard').style.display = 'block';
+  saveHotspotSession();
+}
+
+// 根据用户输入生成 AI 回应（模板 + 关键词，模拟对话）
+function generateHotReply(userText) {
+  const t = userText;
+  let reply = '你说的这个角度很有意思。';
+  if(/为什么|原因|怎么|如何/.test(t)) {
+    reply += ' 我觉得热点背后的原因往往不止一个，既有时代的大背景，也有个人处境的小切面。做内容的人尤其要敏感于这两层。';
+  } else if(/焦虑|担心|怕/.test(t)) {
+    reply += ' 焦虑本身不可怕，可怕的是被焦虑推着走。与其想"我是不是落后了"，不如把注意力放回一件具体的小事上，先做起来。';
+  } else if(/同意|赞成|对|认同/.test(t)) {
+    reply += ' 能在热点里保持一份清醒的判断，本身就是稀缺能力。我们不需要对每个话题都有答案，但可以对自己的生活有方向。';
+  } else if(/反对|不同意|不认同|太绝对/.test(t)) {
+    reply += ' 保留不同意见是健康的。热点经常被简化成二元对立，而真实生活往往是复杂的灰度。你的观点值得被认真对待。';
+  } else if(/我|经历|曾经|以前|现在/.test(t)) {
+    reply += ' 谢谢你愿意分享自己的经历。这种"从别人的话题回到自己的生活"的过程，恰恰是最值得写进文章里的部分——真实永远比观点更有力量。';
+  } else {
+    reply += ' 这个话题确实值得继续聊下去。你觉得它和你最近的关注点有关系吗？或者它让你想起了什么具体的场景？';
+  }
+  return reply;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ===== 生成公众号文章（个人日记风格） =====
+function generateHotArticle() {
+  if(!_hpTopic) { alert('请先生成讨论话题'); return; }
+  const today = new Date();
+  const dateStr = today.getFullYear() + '年' + (today.getMonth()+1) + '月' + today.getDate() + '日';
+  const weekdays = ['日','一','二','三','四','五','六'];
+  const weekday = '星期' + weekdays[today.getDay()];
+
+  // 从对话中提取用户观点（取最近几条用户消息）
+  const userMsgs = _hpChat.filter(m => m.role==='user').map(m => m.text);
+  const userView = userMsgs.length > 0 ? userMsgs[userMsgs.length-1] : '今天的热点让我想了很多';
+
+  // 简笔画装饰行（emoji 组合的简单分隔线）
+  const decor = _hpDecorOn
+    ? '\n\n✿ ──────────────────── ✿\n\n'
+    : '\n\n';
+
+  const title = '今天，聊聊「' + (_hpTopic.title.replace(/[「」——,，。？?]/g,'').slice(0,14)) + '」';
+  const body =
+    '今天是 ' + dateStr + '，' + weekday + '。\n\n' +
+    '照例刷了一遍热搜，' + _hpTopic.source.replace('来源：','') + '上有一条话题，让我的手指停在屏幕前：「' + _hpTopic.title.replace(/[「」]/g,'') + '」。\n' +
+    decor +
+    '我试着不看评论区，先写下自己真实的感受：\n\n' +
+    _hpTopic.opinion + '\n' +
+    decor +
+    '后来，和朋友（或者说，和另一个自己）聊了聊。\n\n' +
+    userMsgs.map((m,i) => (i+1) + '. ' + m).join('\n\n') + '\n' +
+    decor +
+    '聊到最后，我反而平静了下来。热点会过期，情绪会降温，但那些被话题点亮的思考，会留在我的生活里，慢慢长成自己的东西。\n\n' +
+    '这就是今天的日记。谢谢你读到这里。\n\n' +
+    '晚安，明天见。';
+
+  const preview = document.getElementById('hpArticlePreview');
+  preview.style.display = 'block';
+  preview.innerHTML = '<strong>' + escapeHtml(title) + '</strong>\n\n' + escapeHtml(body);
+  preview.setAttribute('data-raw', title + '\n\n' + body);
+
+  // 保存文章记录
+  const fullRaw = title + '\n\n' + body;
+  DB.set('hotspot_article_raw', fullRaw);
+  const articles = DB.get('wechat_articles',[]);
+  articles.push({ title, status:'draft', publishDate: todayStr(), review:'（热点追踪生成）', content: fullRaw, _ts: Date.now() });
+  DB.set('wechat_articles', articles);
+  refreshWechat();
+  saveHotspotSession();
+  showOcrToast('📝 文章已生成并保存到文章管理');
+}
+
+function toggleArticleDecor() {
+  _hpDecorOn = !_hpDecorOn;
+  showOcrToast(_hpDecorOn ? '🎨 简笔画装饰：开' : '🎨 简笔画装饰：关');
+  const preview = document.getElementById('hpArticlePreview');
+  if(preview.style.display === 'block' && preview.getAttribute('data-raw')) {
+    generateHotArticle();
+  }
+}
+
+function copyHotArticle() {
+  const preview = document.getElementById('hpArticlePreview');
+  const raw = preview.getAttribute('data-raw');
+  if(!raw) { alert('请先生成文章'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(raw).then(() => showOcrToast('📋 文章已复制'));
+  } else {
+    const el = document.createElement('textarea');
+    el.value = raw; document.body.appendChild(el); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    showOcrToast('📋 文章已复制');
+  }
+}
+
+// ===== 会话保存/恢复（localStorage） =====
+function saveHotspotSession() {
+  DB.set('hotspot_session', { topic: _hpTopic, chat: _hpChat, date: todayStr() });
+}
+
+function restoreHotspotSession() {
+  const s = DB.get('hotspot_session', null);
+  if(!s || !s.topic || s.date !== todayStr()) return;
+  _hpTopic = s.topic;
+  _hpChat = s.chat || [];
+  const card = document.getElementById('hpTopicCard');
+  if(card) {
+    document.getElementById('hpTopicTitle').textContent = _hpTopic.title;
+    document.getElementById('hpTopicSource').textContent = _hpTopic.source;
+    document.getElementById('hpAiOpinion').textContent = _hpTopic.opinion;
+    card.style.display = 'block';
+    document.getElementById('hpChatTopicLabel').textContent = _hpTopic.title.slice(0,16) + '…';
+  }
+  if(_hpChat.length > 0) {
+    const body = document.getElementById('hpChatBody');
+    body.innerHTML = _hpChat.map(m => `
+      <div class="chat-msg ${m.role}">
+        <div class="avatar">${m.role==='user'?'🙋':'🤖'}</div>
+        <div class="content">${escapeHtml(m.text)}</div>
+      </div>`).join('');
+    document.getElementById('hpChatCard').style.display = 'block';
+  }
+  const raw = DB.get('hotspot_article_raw', null);
+  if(raw) {
+    const preview = document.getElementById('hpArticlePreview');
+    preview.style.display = 'block';
+    preview.innerHTML = escapeHtml(raw);
+    preview.setAttribute('data-raw', raw);
+    document.getElementById('hpArticleCard').style.display = 'block';
+  }
 }
 
 function saveWechatInspiration() {
