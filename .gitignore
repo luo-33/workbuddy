@@ -36,3 +36,7 @@ fix_*.py
 replace_*.py
 write_*.py
 new_*.js
+
+# Personal data - NEVER publish to public GitHub Pages
+weread_sync_data.json
+微信读书同步数据.json

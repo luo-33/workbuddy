@@ -207,14 +207,27 @@ CREATE TABLE IF NOT EXISTS achievements (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 19. emotion_feedbacks 每日情绪反馈（精力/心情/满意度/收获/问题/调整/一句话/备注）
+CREATE TABLE IF NOT EXISTS emotion_feedbacks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  feedback_date DATE NOT NULL,
+  energy SMALLINT, mood_rating SMALLINT, satisfaction SMALLINT,
+  harvest TEXT, problem TEXT, adjust TEXT, one_sentence TEXT, note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, feedback_date)
+);
+CREATE INDEX IF NOT EXISTS idx_emotion_feedbacks_user_date ON emotion_feedbacks(user_id, feedback_date);
+
 -- ============================================================
 -- RLS 安全策略（用户只能读写自己的数据）
 -- ============================================================
--- 17 张数据表：使用 user_id 列（profiles 单独处理，见下方）
+-- 18 张数据表：使用 user_id 列（profiles 单独处理，见下方）
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['daily_plans','english_records','nce_records','ai_tools','ai_tasks','job_records','interview_records','reading_records','knowledge_cards','wechat_articles','xhs_records','health_records','nutrition_records','exercise_records','finance_records','weekly_reviews','achievements']
+  FOREACH t IN ARRAY ARRAY['daily_plans','english_records','nce_records','ai_tools','ai_tasks','job_records','interview_records','reading_records','knowledge_cards','wechat_articles','xhs_records','health_records','nutrition_records','exercise_records','finance_records','weekly_reviews','achievements','emotion_feedbacks']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', t);
     EXECUTE format('DROP POLICY IF EXISTS "%I_own" ON %I;', t, t);
