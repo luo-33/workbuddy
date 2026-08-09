@@ -12833,6 +12833,11 @@ function initSupabase() {
         updateAuthUI();
         // Ensure profile exists
         ensureProfile(user.id);
+        // 刷新恢复登录后自动切云端并同步
+        DATA_CONFIG.mode = 'cloud';
+        DB.set('data_config', DATA_CONFIG);
+        updateAuthUI();
+        setTimeout(() => syncManager.syncAll(), 2000);
       }
     });
 
@@ -12841,8 +12846,11 @@ function initSupabase() {
       if(session?.user) {
         currentUser = { id: session.user.id, email: session.user.email, loggedIn: true };
         ensureProfile(session.user.id);
-        // Auto-sync on login if in cloud mode
-        if(DATA_CONFIG.mode === 'cloud') setTimeout(() => syncManager.syncAll(), 2000);
+        // 已登录用户自动使用云端模式，并在 2 秒后全量同步（覆盖跨设备场景）
+        DATA_CONFIG.mode = 'cloud';
+        DB.set('data_config', DATA_CONFIG);
+        updateAuthUI();
+        setTimeout(() => syncManager.syncAll(), 2000);
       } else {
         currentUser = { id: null, email: null, loggedIn: false };
       }
@@ -12975,7 +12983,11 @@ function authLogin() {
       closeModal('authModal');
       showOcrToast('✅ 登录成功！');
       document.getElementById('sidebarSyncBtn').style.display = 'inline';
-      if(DATA_CONFIG.mode === 'cloud') syncManager.syncAll();
+      // 登录即视为启用云端同步：自动切 cloud 并全量同步
+      DATA_CONFIG.mode = 'cloud';
+      DB.set('data_config', DATA_CONFIG);
+      updateAuthUI();
+      syncManager.syncAll();
     })
     .catch((err) => {
       clearTimeout(timeoutId);
