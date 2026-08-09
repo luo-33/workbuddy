@@ -1214,6 +1214,8 @@ textarea { resize: vertical; min-height: 80px; }
 .ai-tool-mastery .star { color:#f1c40f; font-size:14px; }
 .ai-tool-mastery .star.empty { color:#ddd; }
 .ai-tool-next { font-size:12px; color:#FF82A2; margin-top:4px; padding:4px 10px; background:#FDE8EE; border-radius:8px; display:inline-block; }
+.ai-tool-count { font-size:12px; color:#2da667; margin-top:6px; font-weight:600; }
+.ai-tool-comment { font-size:12px; color:#8b6a78; margin-top:6px; padding:6px 10px; background:#F7F3F5; border-radius:8px; line-height:1.5; }
 
 .workflow-card { background:white; border-radius:12px; padding:16px; margin-bottom:12px; border:1px solid #eee; }
 .wf-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
@@ -3002,6 +3004,12 @@ body {
       </div>
     </div>
 
+    <!-- 个人AI能力档案 -->
+    <div class="card">
+      <div class="card-title">🧰 个人AI能力档案</div>
+      <div id="aiCapabilityCard"></div>
+    </div>
+
     <!-- 今日任务速览 -->
     <div class="card">
       <div class="card-title">📌 今日完成</div>
@@ -3075,6 +3083,10 @@ body {
       </select>
     </div>
     <div class="form-group"><label class="form-label">下一步学习方向 <button type="button" class="voice-btn" data-voice-target="aiToolNext" onclick="startVoiceInput('aiToolNext')" title="语音输入">🎤</button></label><textarea id="aiToolNext" placeholder="还想学什么高级用法？"></textarea></div>
+    <div class="form-group"><label class="form-label">解决的问题 <button type="button" class="voice-btn" data-voice-target="aiToolProblem" onclick="startVoiceInput('aiToolProblem')" title="语音输入">🎤</button></label><textarea id="aiToolProblem" placeholder="它帮我解决了什么问题？如：写文案没灵感、剪辑效率低"></textarea></div>
+    <div class="form-group"><label class="form-label">使用次数</label><input type="number" id="aiToolCount" value="1" min="0" style="font-size:13px;"></div>
+    <div class="form-group"><label class="form-label">我的评价 <button type="button" class="voice-btn" data-voice-target="aiToolComment" onclick="startVoiceInput('aiToolComment')" title="语音输入">🎤</button></label><textarea id="aiToolComment" placeholder="用下来感觉怎么样？顺手吗？有没有坑？"></textarea></div>
+    <div class="form-group"><label class="form-label">产生的成果 <button type="button" class="voice-btn" data-voice-target="aiToolResult" onclick="startVoiceInput('aiToolResult')" title="语音输入">🎤</button></label><textarea id="aiToolResult" placeholder="用它做成了什么？如：1条爆款视频、10篇公众号初稿"></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('aiToolModal')">取消</button>
       <button class="btn btn-primary" onclick="saveAiTool()">保存</button>
@@ -3779,6 +3791,12 @@ body {
     <div class="summary-card"><div class="num" id="wsExercise">0</div><div class="label">运动次数</div></div>
   </div>
 
+  <!-- 我的成长趋势 -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">📈 我的成长趋势（近30天）</div>
+    <div id="growthTrendContent">加载中...</div>
+  </div>
+
   <!-- 本周每日趋势 -->
   <div class="card" style="margin-bottom:12px;">
     <div class="card-title">📈 本周每日完成趋势</div>
@@ -3801,6 +3819,18 @@ body {
   <div class="card">
     <div class="card-title">🏆 连续打卡</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;" id="streakCalendar"></div>
+  </div>
+
+  <!-- 成长时间线 -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">🌱 成长时间线</div>
+    <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">重要时刻会被自动记下来（读完第 N 本书、完成第 N 篇文章、投递第 N 份简历…），也可以手动补充人生大事。</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="date" id="tlDate" style="flex:1;font-size:13px;">
+      <input type="text" id="tlEvent" placeholder="记下这个重要时刻，如：开始开发 WorkBuddy" style="flex:2.5;font-size:13px;">
+      <button class="btn btn-primary btn-sm" onclick="addTimelineEvent()">记下</button>
+    </div>
+    <div id="growthTimelineContent"></div>
   </div>
 </div>
 
@@ -8130,9 +8160,49 @@ function generateAiAnalysis() {
     return `• ${d}：${levels[lv]}`;
   }).join('\n');
   const weak = document.getElementById('jrWeakQuestions').value.trim();
-  let suggestion = '';
-  if(weak) suggestion = `\n\n📌 针对弱项问题的优化建议：\n基于你的回顾，建议采用STAR结构重新组织回答，增加具体数据支撑。可以提前准备2-3个与岗位相关的案例。`;
-  return `【AI 面试分析报告】\n\n📊 各维度评价：\n${analysis}\n\n${weak ? '💡 需要重点关注的问题：\n'+weak : '💡 整体表现较为均衡'}\n${suggestion}`;
+  const strongDims = dims.filter((_,i) => Math.max(0, Math.min(4, rate-1 + Math.floor(Math.random()*3)-1)) >= 3).slice(0,2);
+  const weakDims = weak ? dims.filter((_,i) => Math.max(0, Math.min(4, rate-1 + Math.floor(Math.random()*3)-1)) <= 1).slice(0,2) : [];
+  return `【AI 面试复盘】\n\n📊 本次表现：\n${analysis}\n\n✅ 优势：\n· ${strongDims.length ? strongDims.join('、')+'整体稳定' : '整体表现稳定，节奏没有明显失误'}\n· ${rate >= 4 ? '自评较高，说明这次面试里你有手感较好的时刻' : '有意识地记录复盘，本身就是进步的信号'}\n\n💪 不足：\n${weak ? '· '+weak.replace(/\n/g,'\n· ') : '· 暂未标记明显弱项，建议回看记录里卡顿、绕圈的问题'}\n${weakDims.length ? '· 数据支撑类回答还可以更具体（用数字和案例代替形容）' : ''}\n\n🎯 下一次优化：\n· 针对弱项，用 STAR 结构（情境-任务-行动-结果）重写 1-2 个案例并背熟\n· 准备 2-3 个可量化的成果（播放量/涨粉数/效率提升百分比）\n· 反问环节准备 2 个有深度的问题，展现对岗位的思考`;
+}
+
+// ========== Career Stages（职业成长记录） ==========
+function defaultCareerStages() {
+  return [
+    { month: '2026.07', title: '开始系统学习 AI 工具', desc: '从工具收藏走向工具实践' },
+    { month: '2026.08', title: '完成 WorkBuddy 开发', desc: '独立完成一个可用的成长管理应用' },
+    { month: '2026.09', title: '形成作品案例', desc: '把学习成果沉淀为可展示的作品' }
+  ];
+}
+function renderCareerStages() {
+  const stages = DB.get('career_stages', null) || defaultCareerStages();
+  if(!stages.length) return '<div style="font-size:13px;color:var(--text-secondary);padding:10px 0;">还没有阶段记录，点击「+ 添加阶段」记下你的第一个里程碑。</div>';
+  return stages.map((s,i) => `
+    <div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed #f0e8ec;align-items:flex-start;">
+      <span style="flex-shrink:0;font-size:12px;font-weight:700;color:var(--primary);background:var(--bg);padding:3px 10px;border-radius:12px;">${s.month||''}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:#5d3a4f;">${s.title||''}</div>
+        ${s.desc ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">${s.desc}</div>` : ''}
+      </div>
+      <button class="del-btn" onclick="delCareerStage(${i})">🗑</button>
+    </div>`).join('');
+}
+function addCareerStage() {
+  const month = prompt('阶段月份（如 2026.07）：');
+  if(!month) return;
+  const title = prompt('这个阶段发生了什么？（如：开始学习AI工具）');
+  if(!title) return;
+  const desc = prompt('补充一句说明（可留空）：');
+  const stages = DB.get('career_stages', null) || defaultCareerStages();
+  stages.push({ month: month.trim(), title: title.trim(), desc: (desc||'').trim() });
+  stages.sort((a,b) => a.month.localeCompare(b.month));
+  DB.set('career_stages', stages);
+  refreshJob();
+}
+function delCareerStage(idx) {
+  const stages = DB.get('career_stages', null) || defaultCareerStages();
+  stages.splice(idx, 1);
+  DB.set('career_stages', stages);
+  refreshJob();
 }
 
 // ========== Growth Archive ==========
@@ -8375,6 +8445,14 @@ function renderJobGrowth(apps, interviews, reviews) {
   }));
 
   document.getElementById('jobGrowthContent').innerHTML = `
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>🧭 职业成长记录</span>
+        <button class="btn btn-outline btn-sm" onclick="addCareerStage()">+ 添加阶段</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">把求职路上的关键阶段记下来，回看时会看到自己一步步走到哪里。</p>
+      <div id="careerStageList">${renderCareerStages()}</div>
+    </div>
     <div class="card" style="margin-bottom:12px;">
       <div class="card-title">📊 我的面试成长档案</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
@@ -8686,7 +8764,11 @@ function renderAiTools(tools) {
         <div class="ai-tool-body">
           <strong>核心功能：</strong>${r.core||'-'}<br>
           <strong>使用场景：</strong>${r.scene||'-'}
+          ${r.problem ? `<br><strong>解决的问题：</strong>${r.problem}` : ''}
+          ${r.result ? `<br><strong>产生的成果：</strong>${r.result}` : ''}
         </div>
+        ${r.count > 0 ? `<div class="ai-tool-count">🔁 已用 ${r.count} 次</div>` : ''}
+        ${r.comment ? `<div class="ai-tool-comment">💬 ${r.comment}</div>` : ''}
         ${r.next ? `<div class="ai-tool-next">🎯 ${r.next}</div>` : ''}
       </div>
     `).join('')
@@ -8701,12 +8783,18 @@ function saveAiTool() {
     scene: document.getElementById('aiToolScene').value,
     mastery: document.getElementById('aiToolMastery').value,
     next: document.getElementById('aiToolNext').value,
+    problem: document.getElementById('aiToolProblem').value,
+    count: Math.max(0, parseInt(document.getElementById('aiToolCount').value)||0),
+    comment: document.getElementById('aiToolComment').value,
+    result: document.getElementById('aiToolResult').value,
   };
+  if(!rec.name) { alert('请填写工具名称'); return; }
   const recs = DB.get('ai_tools',[]);
   recs.push(rec);
   DB.set('ai_tools',recs);
   closeModal('aiToolModal');
-  clearForm(['aiToolNameField','aiToolCore','aiToolScene','aiToolNext']);
+  clearForm(['aiToolNameField','aiToolCore','aiToolScene','aiToolNext','aiToolProblem','aiToolComment','aiToolResult']);
+  document.getElementById('aiToolCount').value = 1;
   refreshAi(); refreshDashboard();
 }
 
@@ -8874,6 +8962,53 @@ function renderAiReview(lv, tools, tasks, flows, prompts) {
   document.getElementById('aiRevTaskCount').textContent = lv.tasks;
   document.getElementById('aiRevFlowCount').textContent = lv.flows;
   document.getElementById('aiRevPromptCount').textContent = lv.prompts;
+
+  // ===== 个人AI能力档案 =====
+  const capEl = document.getElementById('aiCapabilityCard');
+  const totalUses = tools.reduce((s,t) => s + (parseInt(t.count)||0), 0);
+  const typeMap = {};
+  tools.forEach(t => {
+    const ty = t.type || '未分类';
+    typeMap[ty] = typeMap[ty] || { count: 0, uses: 0 };
+    typeMap[ty].count++;
+    typeMap[ty].uses += (parseInt(t.count)||0);
+  });
+  const topTools = tools.slice().sort((a,b) => (parseInt(b.count)||0)-(parseInt(a.count)||0)).slice(0,3);
+  if(tools.length === 0) {
+    capEl.innerHTML = '<div style="text-align:center;padding:16px;color:#b3a0a8;font-size:13px;">还没有工具记录。<br>每记录一个工具和它的使用次数、成果，这里会慢慢长成你的「AI 能力档案」。</div>';
+  } else {
+    const typeNames = Object.keys(typeMap);
+    const typeChips = typeNames.map(ty => {
+      const icon = {'设计工具类':'🎨','AI工具类':'🤖','内容创作类':'✍️','数据分析类':'📊','新媒体运营类':'🚀','效率办公类':'⚡','未分类':'📌'}[ty]||'📌';
+      return `<span style="display:inline-block;font-size:12px;background:var(--bg);padding:4px 10px;border-radius:14px;margin:0 6px 6px 0;color:#5d3a4f;">${icon} ${ty} ×${typeMap[ty].count}</span>`;
+    }).join('');
+    capEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+        <div style="text-align:center;padding:12px 6px;background:var(--bg);border-radius:12px;">
+          <div style="font-size:22px;font-weight:800;color:var(--primary);">${tools.length}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">已掌握工具</div>
+        </div>
+        <div style="text-align:center;padding:12px 6px;background:var(--bg);border-radius:12px;">
+          <div style="font-size:22px;font-weight:800;color:#2da667;">${totalUses}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">累计使用次数</div>
+        </div>
+        <div style="text-align:center;padding:12px 6px;background:var(--bg);border-radius:12px;">
+          <div style="font-size:22px;font-weight:800;color:#FF82A2;">${Object.keys(typeMap).length}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">能力方向</div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">🧭 能力分布</div>
+      <div style="margin-bottom:10px;">${typeChips}</div>
+      ${topTools.length > 0 ? `
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">⭐ 高频使用</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+        ${topTools.map(t => `· <strong style="color:#5d3a4f;">${t.name}</strong>（已用 ${parseInt(t.count)||0} 次）${t.result ? '— ' + t.result : ''}`).join('<br>')}
+      </div>` : ''}
+      <div style="margin-top:12px;font-size:12px;color:#8b6a78;background:#F7F3F5;border-radius:10px;padding:10px 12px;line-height:1.6;">
+        👀 <strong>观察：</strong>${tools.length >= 10 ? '工具库已经有了一定规模，接下来值得关注的是「用得深不深」，而不是「收得多不多」。' : tools.length >= 4 ? '工具库正在成型。继续记录「解决的问题」和「产生的成果」，能力档案会越来越清晰。' : '还在起步阶段。每次用完一个工具，顺手记下它解决了什么、做成了什么——积累会自然发生。'}
+        ${totalUses > 0 && totalUses >= tools.length * 3 ? '你已经进入「复利使用」阶段——比起收藏新工具，重复用熟工具带来的产出会更多。' : ''}
+      </div>`;
+  }
 
   // ===== 今日完成 =====
   const today = todayStr();
@@ -10012,7 +10147,62 @@ function renderReadAnalytics() {
           : '开始记录阅读后，这里会自动分析你的认知成长轨迹。'}
       </div>
     </div>
+    ${renderReadThemes(notes)}
   `;
+}
+
+// ===== 阅读主题词典（本地规则，非评价，仅观察） =====
+const READ_THEMES = [
+  { name:'焦虑', words:['焦虑','压力','内耗','恐慌','担心','害怕','不确定','迷茫','紧张'] },
+  { name:'成长', words:['成长','进步','学习','积累','改变','突破','进化','提升','升级'] },
+  { name:'人生意义', words:['意义','价值','人生','活着','目的','使命','自由','自我','归宿'] },
+  { name:'行动与执行', words:['行动','执行','实践','拖延','开始','坚持','习惯','动手','落地'] },
+  { name:'认知与思维', words:['认知','思维','思考','判断','视角','心智','逻辑','反思','观念'] },
+  { name:'关系与沟通', words:['关系','沟通','表达','连接','他人','共情','信任','合作','交流'] },
+  { name:'金钱与事业', words:['钱','金钱','财富','工作','事业','职业','收入','创业','赚钱'] },
+  { name:'效率与方法', words:['效率','方法','工具','流程','模板','系统','清单','时间管理','复用'] },
+  { name:'情绪与感受', words:['情绪','感受','平静','喜悦','孤独','满足','幸福','累','松弛'] },
+  { name:'身体与健康', words:['健康','身体','睡眠','运动','饮食','能量','休息','锻炼'] }
+];
+function countThemeHits(note) {
+  const text = ((note.content||'') + ' ' + (note.understanding||'') + ' ' + (note.keyPoint||'') + ' ' + (note.book||'')).toLowerCase();
+  return READ_THEMES.map(t => ({ name: t.name, hits: t.words.filter(w => text.includes(w)).length }));
+}
+function topTheme(hitsArr) {
+  const agg = {};
+  hitsArr.forEach(h => h.forEach(x => { if(x.hits > 0) agg[x.name] = (agg[x.name]||0) + x.hits; }));
+  return Object.entries(agg).sort((a,b) => b[1]-a[1]).map(e => e[0]);
+}
+function renderReadThemes(notes) {
+  const hasNotes = notes && notes.length > 0;
+  const allNotes = hasNotes ? notes : DB.get('read_notes',[]);
+  if(!allNotes.length) return `
+    <div class="health-review-card">
+      <h4 style="margin:0 0 10px;font-size:15px;color:#5d3a4f;">📚 近期阅读主题</h4>
+      <div class="review-advice">记录阅读笔记后，这里会帮你看到最近在关注什么主题、想法在往哪里走。</div>
+    </div>`;
+  const hitsArr = allNotes.map(n => countThemeHits(n));
+  const themes = topTheme(hitsArr).slice(0,4);
+  // 思想变化：按时间分前后两半，对比关注焦点
+  const sorted = allNotes.slice().sort((a,b) => String(a.date||'').localeCompare(String(b.date||'')));
+  const mid = Math.max(1, Math.floor(sorted.length/2));
+  const early = topTheme(sorted.slice(0, mid).map(n => countThemeHits(n))).slice(0,2);
+  const recent = topTheme(sorted.slice(mid).map(n => countThemeHits(n))).slice(0,2);
+  let shift = '';
+  if(early.length && recent.length && early[0] !== recent[0]) {
+    shift = `你的思考焦点正在从「<strong>${early[0]}</strong>」逐渐转向「<strong>${recent[0]}</strong>」——这只是一个观察，不代表好坏。`;
+  } else if(recent.length) {
+    shift = `最近你一直在围绕「<strong>${recent[0]}</strong>」深入。持续关注同一个主题，往往意味着它对你很重要。`;
+  } else {
+    shift = '笔记还不够多，写几条之后，思想变化的轨迹会慢慢浮现。';
+  }
+  const themeChips = themes.length ? themes.map(t => `<span style="display:inline-block;font-size:12px;background:var(--bg);padding:4px 12px;border-radius:14px;margin:0 6px 6px 0;color:#5d3a4f;">${t}</span>`).join('') : '<span style="font-size:12px;color:var(--text-secondary);">主题还在沉淀中，多记几条读书想法吧</span>';
+  return `
+    <div class="health-review-card">
+      <h4 style="margin:0 0 10px;font-size:15px;color:#5d3a4f;">📚 近期阅读主题</h4>
+      <div style="margin-bottom:8px;">${themeChips}</div>
+      <div class="review-advice">${hasNotes ? '' : '<span style="color:#c45677;">（当前周期笔记少，展示的是全部笔记的主题）</span><br>'}<strong>🧠 思想变化：</strong>${shift}</div>
+    </div>`;
 }
 
 function switchReadTab(tab, btn) {
@@ -10599,22 +10789,26 @@ function refreshWeekly() {
   });
   const totalXp = calcTotalXp();
   const lv = getLevel(totalXp);
-  const growthMessages = [
-    "这一周你完成的不只是任务，而是在逐渐建立自己的能力体系。",
-    "持续行动的力量正在积累，坚持下去，你会看到质变的那一天。",
-    "每一份努力都在为未来的你铺路。",
-    "你用行动证明了自己正在变得更好。",
-    "成长就是在日复一日的坚持中悄然发生的。"
-  ];
+  const weekParts = [];
+  if(aiRecs.length) weekParts.push(`${aiRecs.length} 个 AI 实践`);
+  if(readRecs.length) weekParts.push(`${readRecs.length} 次阅读`);
+  if(xhsRecs.filter(r=>r.status==='published').length) weekParts.push(`${xhsRecs.filter(r=>r.status==='published').length} 篇内容`);
+  if(jobRecs.length) weekParts.push(`${jobRecs.length} 份投递`);
+  if(burnThisWeek.length) weekParts.push(`${burnThisWeek.length} 次运动`);
+  const observe = weekParts.length
+    ? `这一周你留下了：${weekParts.join('、')}。它们只是你行动的影子，不是对你的评价——看看和本周重心是否一致就够了。`
+    : `这一周还没有留下行动记录。没关系，从一件小事开始就好。`;
   document.getElementById('weeklyGrowthFeedback').innerHTML = `
     🌟 <strong>本周获得 ${weekXp} XP</strong> · ${weekDaysWithXp}天有行动<br>
     累计 ${totalXp} XP · 当前 ${lv.short} ${lv.name}<br><br>
-    💬 "${growthMessages[Math.floor(Math.random()*growthMessages.length)]}"
+    👀 <strong>观察：</strong>${observe}
   `;
 
   // Streak calendar
   renderWeeklyTrend();
   renderStreakCalendar();
+  renderGrowthTrend();
+  renderGrowthTimeline();
 }
 
 function saveWeeklySummary() {
@@ -10630,6 +10824,114 @@ function saveWeeklySummary() {
     problem: document.getElementById('wsProblem').value,
     nextWeek: document.getElementById('wsNextWeek').value,
   });
+}
+
+// ===== 成长趋势分析（近30天 vs 前30天，只观察不评价） =====
+function _dateInRange(d, from, to) { return d && d >= from && d <= to; }
+function renderGrowthTrend() {
+  const el = document.getElementById('growthTrendContent');
+  if(!el) return;
+  const now = new Date();
+  const to = todayStr();
+  const from30 = new Date(now); from30.setDate(now.getDate()-29);
+  const from60 = new Date(now); from60.setDate(now.getDate()-59);
+  const a = from30.toISOString().slice(0,10), b = from60.toISOString().slice(0,10);
+
+  const datasets = [
+    { name:'学习', icon:'📚', rows: DB.get('ai_tasks',[]).map(r=>r.date) },
+    { name:'阅读', icon:'📖', rows: DB.get('reading_records',[]).map(r=>r.date) },
+    { name:'创作', icon:'✍️', rows: [...DB.get('wechat_articles',[]).filter(r=>r.status==='published').map(r=>r.publishDate||r.date), ...DB.get('xhs_records',[]).filter(r=>r.status==='published').map(r=>r.date)] },
+    { name:'运动', icon:'🏃', rows: DB.get('burn_records',[]).map(r=>r.date) },
+    { name:'求职', icon:'💼', rows: DB.get('job_apply',[]).map(r=>r.date) }
+  ];
+  const totalRows = datasets.reduce((s,d)=>s+d.rows.length, 0);
+  if(totalRows === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-secondary);font-size:13px;">还没有记录。开始使用各个模块后，这里会显示你近 30 天的行动变化。<br><span style="font-size:12px;color:#b3a0a8;">目的不是评价好坏，而是帮助你观察自己。</span></div>';
+    return;
+  }
+  const maxPct = 120;
+  const rowsHtml = datasets.map(d => {
+    const cur = d.rows.filter(r => _dateInRange(r, a, to)).length;
+    const prev = d.rows.filter(r => _dateInRange(r, b, a)).length;
+    let trend, arrow, color;
+    if(cur === 0 && prev === 0) { trend = '—'; arrow = '·'; color = 'var(--text-light)'; }
+    else if(prev === 0) { trend = '开始投入'; arrow = '→'; color = '#2da667'; }
+    else {
+      const pct = Math.round((cur - prev) / prev * 100);
+      trend = (pct === 0 ? '持平' : Math.abs(pct) + '%');
+      arrow = pct > 0 ? '↑' : pct < 0 ? '↓' : '→';
+      color = pct >= 0 ? '#2da667' : '#e67e22';
+    }
+    const barPct = Math.min(100, Math.max(6, prev === 0 ? (cur>0?30:6) : Math.round(cur / Math.max(prev,1) * 50)));
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+      <span style="width:88px;font-size:13px;color:#5d3a4f;flex-shrink:0;">${d.icon} ${d.name}</span>
+      <div style="flex:1;background:var(--bg);border-radius:6px;height:10px;overflow:hidden;">
+        <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#BDDE93,#FF82A2);border-radius:6px;transition:width .4s;"></div>
+      </div>
+      <span style="width:76px;text-align:right;font-size:13px;font-weight:700;color:${color};flex-shrink:0;">${arrow} ${trend}</span>
+      <span style="width:44px;text-align:right;font-size:11px;color:var(--text-light);flex-shrink:0;">${cur}次</span>
+    </div>`;
+  }).join('');
+  el.innerHTML = rowsHtml + `
+    <div style="margin-top:10px;font-size:12px;color:var(--text-secondary);background:var(--bg);border-radius:10px;padding:10px 12px;line-height:1.6;">
+      👀 <strong>观察：</strong>这些数字只是你最近行动的影子，不是对你的评价。看看哪一项在变多、哪一项在变少，问问自己「这符合我现在的重心吗」，就够了。
+    </div>`;
+}
+
+// ===== 成长时间线（自动里程碑 + 手动事件） =====
+function collectAutoMilestones() {
+  const tl = DB.get('growth_timeline',[]);
+  const has = t => tl.some(x => x.text === t);
+  const add = (text) => { if(!has(text)) tl.push({ date: todayStr(), text, auto: true }); };
+  const step = (list, n, label) => {
+    const cnt = list.length;
+    for(let k = n; k <= cnt; k += n) add(`${label}${k}`);
+  };
+  step(DB.get('read_books',[]).filter(b=>b.status==='已完成'), 5, '📚 读完第 ');
+  step(DB.get('wechat_articles',[]).filter(a=>a.status==='published'), 5, '✍️ 完成第 ');
+  step(DB.get('xhs_records',[]).filter(x=>x.status==='published'), 5, '📱 发布第 ');
+  step(DB.get('ai_tasks',[]), 10, '🤖 完成第 ');
+  step(DB.get('job_apply',[]), 5, '💼 投递第 ');
+  step(DB.get('job_interview',[]), 3, '🎤 完成第 ');
+  step(DB.get('burn_records',[]), 20, '🏃 运动第 ');
+  if(tl.length) DB.set('growth_timeline', tl);
+}
+function renderGrowthTimeline() {
+  const el = document.getElementById('growthTimelineContent');
+  if(!el) return;
+  collectAutoMilestones();
+  const tlRaw = DB.get('growth_timeline',[]);
+  const tl = tlRaw.map((t,i) => ({...t, _i:i})).sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
+  el.innerHTML = tl.length ? `
+    <div style="position:relative;padding-left:18px;">
+      <div style="position:absolute;left:4px;top:4px;bottom:4px;width:2px;background:linear-gradient(180deg,#BDDE93,#FF82A2);"></div>
+      ${tl.map((t) => `
+        <div style="position:relative;padding:6px 0 6px 14px;">
+          <div style="position:absolute;left:-15px;top:10px;width:10px;height:10px;border-radius:50%;background:${t.auto?'#BDDE93':'#FF82A2'};border:2px solid #fff;box-shadow:0 0 0 2px ${t.auto?'#BDDE93':'#FF82A2'}22;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span style="font-size:13px;color:#5d3a4f;line-height:1.5;">${t.text}${t.auto ? ' <span style="font-size:10px;color:var(--text-light);">· 自动</span>' : ' <span style="font-size:10px;color:var(--text-light);">· 手动</span>'}</span>
+            <button class="del-btn" onclick="delTimelineEvent(${t._i})" style="font-size:11px;">🗑</button>
+          </div>
+          ${t.date ? `<div style="font-size:11px;color:var(--text-light);margin-top:1px;">${t.date}</div>` : ''}
+        </div>`).join('')}
+    </div>
+  ` : '<div style="text-align:center;padding:14px;color:var(--text-secondary);font-size:13px;">还没有里程碑。<br>开始记录和行动后，重要时刻会自动出现在这里；也可以用上方输入框手动记下人生大事。</div>';
+}
+function addTimelineEvent() {
+  const date = document.getElementById('tlDate').value || todayStr();
+  const text = document.getElementById('tlEvent').value.trim();
+  if(!text) { alert('请写下这个重要时刻'); return; }
+  const tl = DB.get('growth_timeline',[]);
+  tl.push({ date, text, auto: false });
+  DB.set('growth_timeline', tl);
+  document.getElementById('tlEvent').value = '';
+  renderGrowthTimeline();
+}
+function delTimelineEvent(idx) {
+  const tl = DB.get('growth_timeline',[]);
+  tl.splice(idx, 1);
+  DB.set('growth_timeline', tl);
+  renderGrowthTimeline();
 }
 
 function renderStreakCalendar() {
