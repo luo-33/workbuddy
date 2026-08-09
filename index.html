@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workbuddy">
 <meta name="mobile-web-app-capable" content="yes">
+<!-- 最早主题兜底：HTML 渲染前按时间设 data-theme，避免闪烁与默认夜间停留 -->
+<script>(function(){var h=new Date().getHours();if(!(h>=22||h<7))document.documentElement.setAttribute('data-theme','day');})();</script>
 <meta name="theme-color" content="#BDDE93">
 <!-- Cache prevention: always fetch latest from server -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
