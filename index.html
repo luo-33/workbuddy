@@ -4809,8 +4809,22 @@ function loadDataConfig() {
 // ========== DATA STORE (localStorage implementation) ==========
 const DB = {
   get(key, def=null) { try { const d = localStorage.getItem('pg_'+key); return d ? JSON.parse(d) : def; } catch(e) { return def; } },
-  set(key, val) { localStorage.setItem('pg_'+key, JSON.stringify(val)); }
+  set(key, val) {
+    localStorage.setItem('pg_'+key, JSON.stringify(val));
+    _scheduleAutoSync();
+  }
 };
+
+// 写入后防抖自动上传云端（支持同一账号跨设备实时同步）
+let _autoSyncTimer = null;
+function _scheduleAutoSync() {
+  if(!(DATA_CONFIG.mode === 'cloud' && currentUser && currentUser.loggedIn && isSupabaseReady())) return;
+  if(_autoSyncTimer) clearTimeout(_autoSyncTimer);
+  _autoSyncTimer = setTimeout(() => {
+    _autoSyncTimer = null;
+    if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
+  }, 4000);
+}
 
 // ===== 昼夜模式切换 =====
 function applyTheme(theme){
