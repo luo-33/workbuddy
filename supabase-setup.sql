@@ -245,3 +245,13 @@ CREATE POLICY "profiles_own" ON profiles
 -- 完成！18 张表 + 18 条 RLS 策略已创建
 -- 返回 Workbuddy → 登录 → 点击「同步数据」即可全量同步
 -- ============================================================
+
+-- ============================================================
+-- v1.0.15 增强字段：AI 工具库 → 个人 AI 能力档案
+-- 适用：在已有库上扩展（如首次建库，CREATE TABLE 已含这些列，本段重复执行安全）
+-- ============================================================
+ALTER TABLE ai_tools
+  ADD COLUMN IF NOT EXISTS problem text,
+  ADD COLUMN IF NOT EXISTS count   int  DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS comment text,
+  ADD COLUMN IF NOT EXISTS result  text;

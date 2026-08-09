@@ -5011,7 +5011,11 @@ function formatAiToolsForDB(data) {
     core_function: t.core || null,
     use_scene: t.scene || null,
     mastery_level: parseInt(t.mastery) || 1,
-    next_step: t.next || null
+    next_step: t.next || null,
+    problem: t.problem || null,
+    count: parseInt(t.count) || 0,
+    comment: t.comment || null,
+    result: t.result || null
   }));
 }
 
@@ -13640,7 +13644,8 @@ const syncManager = {
       else if(tableName === 'ai_tools') {
         const cloudData = rows.map(r => ({
           name: r.name, type: r.category, core: r.core_function,
-          scene: r.use_scene, mastery: r.mastery_level, next: r.next_step
+          scene: r.use_scene, mastery: r.mastery_level, next: r.next_step,
+          problem: r.problem, count: r.count, comment: r.comment, result: r.result
         }));
         const existing = DB.get('ai_tools', []);
         const names = new Set(existing.map(e => e.name));
