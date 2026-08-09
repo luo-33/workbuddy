@@ -5020,20 +5020,9 @@ const DB = {
   get(key, def=null) { try { const d = localStorage.getItem('pg_'+key); return d ? JSON.parse(d) : def; } catch(e) { return def; } },
   set(key, val) {
     localStorage.setItem('pg_'+key, JSON.stringify(val));
-    _scheduleAutoSync();
+    // 同步改为手动触发：用户点击侧边栏「🔄 同步数据」时才同步
   }
 };
-
-// 写入后防抖自动上传云端（支持同一账号跨设备实时同步）
-let _autoSyncTimer = null;
-function _scheduleAutoSync() {
-  if(!(DATA_CONFIG.mode === 'cloud' && currentUser && currentUser.loggedIn && isSupabaseReady())) return;
-  if(_autoSyncTimer) clearTimeout(_autoSyncTimer);
-  _autoSyncTimer = setTimeout(() => {
-    _autoSyncTimer = null;
-    if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
-  }, 4000);
-}
 
 // ===== 昼夜模式切换 =====
 function applyTheme(theme){
@@ -13501,11 +13490,10 @@ function initSupabase() {
         updateAuthUI();
         // Ensure profile exists
         ensureProfile(user.id);
-        // 刷新恢复登录后自动切云端并同步
+        // 刷新恢复登录后自动切云端，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
         DATA_CONFIG.mode = 'cloud';
         DB.set('data_config', DATA_CONFIG);
         updateAuthUI();
-        setTimeout(() => syncManager.syncAll(), 2000);
       }
     });
 
@@ -13514,11 +13502,10 @@ function initSupabase() {
       if(session?.user) {
         currentUser = { id: session.user.id, email: session.user.email, loggedIn: true };
         ensureProfile(session.user.id);
-        // 已登录用户自动使用云端模式，并在 2 秒后全量同步（覆盖跨设备场景）
+        // 已登录用户自动使用云端模式，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
         DATA_CONFIG.mode = 'cloud';
         DB.set('data_config', DATA_CONFIG);
         updateAuthUI();
-        setTimeout(() => syncManager.syncAll(), 2000);
       } else {
         currentUser = { id: null, email: null, loggedIn: false };
       }
@@ -13649,13 +13636,12 @@ function authLogin() {
         return;
       }
       closeModal('authModal');
-      showOcrToast('✅ 登录成功！');
+      showOcrToast('✅ 登录成功！请点击侧边栏「🔄 同步数据」手动同步');
       document.getElementById('sidebarSyncBtn').style.display = 'inline';
-      // 登录即视为启用云端同步：自动切 cloud 并全量同步
+      // 登录后自动切 cloud 模式，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
       DATA_CONFIG.mode = 'cloud';
       DB.set('data_config', DATA_CONFIG);
       updateAuthUI();
-      syncManager.syncAll();
     })
     .catch((err) => {
       clearTimeout(timeoutId);
@@ -15412,17 +15398,8 @@ document.addEventListener('DOMContentLoaded', function(){
   // 应用主题：按时间自动（22:00~07:00 夜间，其余白天）
   applyAutoTheme();
 
-  // 1. Auto-sync when app comes to foreground (mobile-friendly)
-  document.addEventListener('visibilitychange', () => {
-    if(!document.hidden && isSupabaseReady() && currentUser.loggedIn && DATA_CONFIG.mode === 'cloud') {
-      syncManager.syncAll();
-    }
-  });
-
-  // 2. Auto-sync on page load if cloud mode (for cross-device scenario)
-  if(isSupabaseReady() && currentUser.loggedIn && DATA_CONFIG.mode === 'cloud') {
-    setTimeout(() => syncManager.syncAll(), 3000);
-  }
+  // 同步改为手动触发：用户点击侧边栏「🔄 同步数据」时才同步
+  // （避免每次写入/切回页面/刷新都自动同步，减少干扰）
 });
 </script>
 </body>
