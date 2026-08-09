@@ -2208,6 +2208,19 @@ body {
     <div class="dr-tips" id="drTips"></div>
   </div>
 
+  <!-- 今日状态卡片 -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <span>📌 今日状态</span>
+      <span style="font-size:12px;color:var(--text-secondary);" id="todayStatusDate"></span>
+    </div>
+    <div id="todayStatusContent">记录今天的内容后，这里会汇总你的学习、创作、工作与情绪。</div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-primary btn-sm" onclick="generateHomeTodaySummary()">✨ AI生成今日总结</button>
+      <div id="homeTodaySummary" style="display:none;margin-top:12px;"></div>
+    </div>
+  </div>
+
   <!-- ========== 成长记录日历（比奇堡角色贴纸版） ========== -->
   <div class="growth-calendar-wrap">
     <div class="cal-today-head">
@@ -5402,6 +5415,7 @@ function refreshDashboard() {
   renderDashFinanceHealth();
   renderGrowthLevel();
   renderDailyReport();
+  renderTodayStatus();
   try { renderGrowthCalendar(); } catch(e) { console.warn('[Dashboard] 日历渲染异常:', e); }
   try { renderWeeklyTimeline(); } catch(e) { console.warn('[Dashboard] 周时间轴渲染异常:', e); }
   try { renderYearReview(); } catch(e) { console.warn('[Dashboard] 年度回顾渲染异常:', e); }
@@ -6190,10 +6204,11 @@ function generateDailyReport() {
   if(burns.length === 0) tips.push('🏃 运动一下');
 
   let feedback = '';
-  if(score >= 80) feedback = '👏 今天超棒！全方位成长，继续保持！';
-  else if(score >= 60) feedback = '👍 不错！有几个模块还需加强。';
-  else if(score >= 40) feedback = '💪 还可以更好，明天集中突破一两个模块。';
-  else feedback = '🌱 从一个小目标开始吧，哪怕只做一件事也是进步。';
+  const doneCount = items.filter(it => it[2]).length;
+  if(doneCount >= 5) feedback = '今天完成了多个模块的记录。你在保持行动——也记得看看哪一项是自己真正在乎的。';
+  else if(doneCount >= 3) feedback = '今天留下了 ' + doneCount + ' 项记录。数量不是重点，连续出现才重要。';
+  else if(doneCount > 0) feedback = '今天完成了 ' + doneCount + ' 项。哪怕只有一件，也是今天真实的一部分。';
+  else feedback = '今天还没有留下记录。没关系，从一件小事开始就好。';
 
   const reports = DB.get('daily_reports',[]);
   reports.push({date:today, score, items, feedback, tips, _ts:Date.now()});
@@ -6224,6 +6239,87 @@ function renderDailyReport() {
   const reports = DB.get('daily_reports',[]);
   const latest = reports.slice().reverse().find(r => r.date === todayStr());
   if(latest) { updateDashboardReport(latest.score, latest.items, latest.feedback, latest.tips); updateDailyReview(latest.items); }
+}
+
+// ===== 首页：今日状态卡片 =====
+const MOOD_TEXT = { 1:'😞 低落', 2:'😐 一般', 3:'🙂 平静', 4:'😊 不错', 5:'🤩 很棒' };
+function todayStatusData() {
+  const today = todayStr();
+  const engMins = DB.get('english_records',[]).filter(r=>r.date===today).reduce((s,r)=>s+(parseFloat(r.time)||0),0);
+  const readMins = DB.get('reading_records',[]).filter(r=>r.date===today).reduce((s,r)=>s+(parseFloat(r.time)||0),0);
+  const aiTasks = DB.get('ai_tasks',[]).filter(r=>r.date===today);
+  const xhsPub = DB.get('xhs_records',[]).filter(r=>r.date===today && r.status==='published').length;
+  const wechatPub = DB.get('wechat_articles',[]).filter(r=>(r.publishDate||r.date)===today && r.status==='published').length;
+  const jobApps = DB.get('job_apply',[]).filter(r=>r.date===today);
+  const burns = DB.get('burn_records',[]).filter(r=>r.date===today);
+  const mood = DB.get('mood_'+today, 0);
+  return { today, engMins, readMins, aiTasks, xhsPub, wechatPub, jobApps, burns, mood };
+}
+function renderTodayStatus() {
+  const el = document.getElementById('todayStatusContent');
+  const dateEl = document.getElementById('todayStatusDate');
+  if(!el) return;
+  const d = todayStatusData();
+  dateEl.textContent = d.today;
+  const rows = [];
+  const learn = [];
+  if(d.engMins > 0) learn.push(`英语 ${Math.round(d.engMins)} 分钟`);
+  if(d.readMins > 0) learn.push(`阅读 ${Math.round(d.readMins)} 分钟`);
+  if(d.aiTasks.length) learn.push(`${d.aiTasks.length} 个 AI 实践`);
+  if(d.burns.length) rows.push(['🏃 运动', `${d.burns.length} 次`]);
+  if(learn.length) rows.push(['📚 学习', learn.join(' · ')]);
+  rows.push(['🎨 创作', d.xhsPub + d.wechatPub > 0 ? `${d.xhsPub+d.wechatPub} 篇内容` : '—']);
+  rows.push(['💼 工作', d.jobApps.length ? `${d.jobApps.length} 次投递/分析` : '—']);
+  rows.push(['🙂 情绪', d.mood ? MOOD_TEXT[d.mood] : '未记录']);
+  const any = learn.length > 0 || d.burns.length > 0 || d.jobApps.length > 0 || (d.xhsPub+d.wechatPub) > 0 || d.mood;
+  el.innerHTML = any ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      ${rows.map(r => `<div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;">
+        <span style="color:var(--text-secondary);">${r[0]}</span><br>
+        <span style="color:#5d3a4f;font-weight:600;">${r[1]}</span>
+      </div>`).join('')}
+    </div>` : '<div style="font-size:13px;color:var(--text-secondary);">今天还没有记录。随手记一笔，今日状态就会出现在这里。</div>';
+}
+function generateHomeTodaySummary() {
+  const out = document.getElementById('homeTodaySummary');
+  if(!out) return;
+  const d = todayStatusData();
+  const done = [];
+  if(d.engMins > 0) done.push(`英语 ${Math.round(d.engMins)} 分钟`);
+  if(d.readMins > 0) done.push(`阅读 ${Math.round(d.readMins)} 分钟`);
+  if(d.aiTasks.length) done.push(`${d.aiTasks.length} 个 AI 实践`);
+  if(d.xhsPub+d.wechatPub > 0) done.push(`${d.xhsPub+d.wechatPub} 篇创作`);
+  if(d.jobApps.length) done.push(`${d.jobApps.length} 次投递/分析`);
+  if(d.burns.length) done.push(`${d.burns.length} 次运动`);
+  const growth = [];
+  if(d.engMins >= 30) growth.push('保持了稳定的英语输入');
+  if(d.readMins > 0) growth.push('阅读让输入更完整');
+  if(d.aiTasks.length) growth.push('在 AI 实践上积累了可复用的经验');
+  if(d.xhsPub+d.wechatPub > 0) growth.push('有内容产出，想法正在变成作品');
+  if(d.jobApps.length) growth.push('求职上保持了主动');
+  if(d.burns.length) growth.push('照顾了自己的身体');
+  const issues = [];
+  if(d.engMins === 0 && d.readMins === 0) issues.push('今天还没有学习输入');
+  if(d.xhsPub+d.wechatPub === 0) issues.push('今天没有创作产出');
+  if(!d.mood) issues.push('没有记录今天的情绪，可以花 10 秒点一下');
+  const advise = [];
+  if(issues.length === 0) advise.push('明天试着在保持的基础上，把创作时间再加 30 分钟');
+  else {
+    if(d.xhsPub+d.wechatPub === 0) advise.push('给自己 30 分钟创作时间，哪怕只写一段开头');
+    if(d.engMins === 0 && d.readMins === 0) advise.push('从一篇 15 分钟的短文开始，先恢复输入节奏');
+    if(!d.mood) advise.push('明天记得点一下情绪，数据会更有连续性');
+  }
+  const hasData = done.length > 0 || issues.length > 0;
+  out.style.display = 'block';
+  out.innerHTML = `
+    <div style="background:var(--bg);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.8;color:#5d3a4f;">
+      <div style="font-weight:700;margin-bottom:6px;">📋 今日总结 · ${d.today}</div>
+      <div><strong>今日完成：</strong>${hasData && done.length ? done.join('、') : '还没有留下记录'}</div>
+      <div><strong>今日主要成长：</strong>${growth.length ? growth.join('；') : '今天更多是休整——休息本身也是成长的一部分'}</div>
+      <div><strong>今日问题：</strong>${issues.length ? issues.join('；') : '暂时没有明显问题'}</div>
+      <div><strong>明日建议：</strong>${advise.join('；')}</div>
+      <div style="margin-top:6px;font-size:12px;color:var(--text-light);">👀 这只是今天的影子，不是对你的评价。</div>
+    </div>`;
 }
 
 // ========== WEEKLY TREND ==========
