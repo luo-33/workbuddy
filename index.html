@@ -54,30 +54,30 @@ const SUPABASE_ANON_KEY = "sb_publishable_LZ1X_cFE9x6UXBwfvLVFqA_Mgb4pMmQ";
   --amber: #E4F6A9;
 }
 
-/* ====== 白天模式：玫瑰红主题（用属性切换） ====== */
+/* ====== 白天模式：米白花园主题（用属性切换） ====== */
 :root[data-theme="day"] {
-  --primary: #910D38;
-  --primary-dark: #541625;
-  --primary-light: #BC788D;
-  --bg: #FDF0F4;
-  --bg-2: #BC788D;
+  --primary: #5F8D63;
+  --primary-dark: #456B48;
+  --primary-light: #A9CBA8;
+  --bg: #FAF7F0;
+  --bg-2: #F1ECE1;
   --card-bg: #FFFFFF;
-  --text-primary: #230E0F;
-  --text-secondary: #541625;
-  --text-light: #BC788D;
-  --border: rgba(188,120,141,0.35);
-  --shadow: 0 2px 12px rgba(35,14,15,0.08);
-  --guava: #FEDFE6;
-  --guava-soft: #FFF5F8;
-  --grape: #910D38;
-  --grape-dark: #541625;
-  --accent-pink: #FF82A2;
-  --accent-pink-dark: #910D38;
-  --ink: #230E0F;
-  --ink-soft: #541625;
-  --green: #9D4060;
-  --red: #910D38;
-  --amber: #FFE0E9;
+  --text-primary: #3D3A33;
+  --text-secondary: #7C7768;
+  --text-light: #ABA78F;
+  --border: rgba(61,58,51,0.10);
+  --shadow: 0 4px 20px rgba(120,110,90,0.08);
+  --guava: #EAF1E6;
+  --guava-soft: #F4F1E9;
+  --grape: #5F8D63;
+  --grape-dark: #456B48;
+  --accent-pink: #6FAE72;
+  --accent-pink-dark: #4E7E51;
+  --ink: #3D3A33;
+  --ink-soft: #7C7768;
+  --green: #6FAE72;
+  --red: #C96B5E;
+  --amber: #E8C879;
 }
 
 /* 主题切换平滑 */
@@ -1916,6 +1916,141 @@ body {
 @keyframes voicePulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: .55; transform: scale(1.12); }
+/* ============================================================
+   白天模式 · 个人数字花园主题（覆盖层）
+   目标：米白背景 / 白色卡片 / 少量绿色成长强调 / 圆角 / 留白
+   不改变任何功能与模块，仅优化呈现。
+   ============================================================ */
+:root[data-theme="day"] { --radius: 18px; }
+
+/* 欢迎横幅：从工具感渐变 → 温暖花园卡片 */
+:root[data-theme="day"] .welcome-banner {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F4F8EF 100%);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 26px 28px;
+}
+:root[data-theme="day"] .welcome-banner::after {
+  background: radial-gradient(circle, rgba(111,174,114,.16), transparent 70%);
+  width: 170px; height: 170px; right: -34px; top: -44px;
+}
+:root[data-theme="day"] .welcome-banner h1 { color: var(--text-primary); }
+:root[data-theme="day"] .welcome-banner p { color: var(--text-secondary); opacity: 1; }
+
+/* 成长等级卡：柔和花园绿 */
+:root[data-theme="day"] .level-card {
+  background: linear-gradient(135deg, #6FAE72 0%, #4E7E51 100%);
+  box-shadow: 0 8px 24px rgba(111,174,114,.22);
+}
+
+/* 统计卡 + 强调色 */
+:root[data-theme="day"] .stat-card {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+:root[data-theme="day"] .stat-num { color: var(--primary); }
+
+/* 导航激活态（绿色成长强调） */
+:root[data-theme="day"] .nav-item.active {
+  background: var(--primary);
+  box-shadow: 0 2px 10px rgba(95,141,99,.25);
+}
+:root[data-theme="day"] .nav-item:hover { background: var(--guava-soft); }
+
+/* 阶段徽章 */
+:root[data-theme="day"] .phase-badge { background: var(--guava); color: var(--primary-dark); }
+
+/* ===== 我的成长小院（模块花园） ===== */
+.garden-section { margin-bottom: 18px; }
+.garden-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.garden-head h3 { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.garden-head .sub { font-size: 12px; color: var(--text-light); }
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.module-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 16px 14px;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  box-shadow: var(--shadow);
+}
+.module-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary-light);
+  box-shadow: 0 8px 22px rgba(95,141,99,.14);
+}
+.module-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.module-icon {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: var(--guava); display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.module-name { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.module-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.module-count { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
+.module-count small { font-size: 12px; font-weight: 500; color: var(--text-light); margin-left: 3px; }
+.module-prog { height: 6px; background: var(--bg-2); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+.module-prog > i { display: block; height: 100%; background: linear-gradient(90deg, var(--primary-light), var(--primary)); border-radius: 4px; transition: width .6s ease; }
+
+/* 连续记录天数徽章 */
+.streak-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--guava); color: var(--primary-dark);
+  border: 1px solid var(--primary-light);
+  padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  margin-top: 10px;
+}
+
+/* 月度总结入口卡 */
+.monthly-card {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #FFFFFF, #F4F8EF);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px; margin-bottom: 18px;
+  cursor: pointer; box-shadow: var(--shadow);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.monthly-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(95,141,99,.14); }
+.monthly-card .mc-icon { font-size: 30px; }
+.monthly-card .mc-body { flex: 1; }
+.monthly-card .mc-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.monthly-card .mc-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.monthly-card .mc-arrow { color: var(--primary); font-size: 20px; }
+
+/* 数据可视化：本周成长节奏 */
+.viz-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+.viz-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.viz-head .vh-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.viz-head .vh-sub { font-size: 12px; color: var(--text-light); }
+.viz-bars { display: flex; align-items: flex-end; gap: 10px; height: 110px; }
+.viz-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.viz-bar {
+  width: 100%; max-width: 28px; border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, var(--primary-light), var(--primary));
+  transition: height .6s ease; min-height: 6px;
+}
+.viz-bar.zero { background: var(--bg-2); }
+.viz-day { font-size: 11px; color: var(--text-light); }
+.viz-bar-col.today .viz-day { color: var(--primary); font-weight: 700; }
+
+/* 今日状态卡强调 */
+:root[data-theme="day"] .daily-report-card {
+  background: linear-gradient(135deg, #FFFFFF, #F4F8EF);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 768px) {
+  .module-grid { grid-template-columns: repeat(2, 1fr); }
+  .viz-bars { gap: 6px; }
+}
 </style>
 </head>
 <body>
@@ -2150,9 +2285,10 @@ body {
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <div class="welcome-char"><svg width="64" height="74"><use href="#spongebob"/></svg></div>
       <div>
-        <h1>🧽 你好，自信！准备好抓水母了吗？</h1>
+        <h1>🌿 你好，自信！今天也记得好好生活。</h1>
         <p id="todayDate"></p>
-        <p style="margin-top:8px;font-size:13px;">2026届毕业生 · 新媒体运营方向 · 第 <strong id="dayCount">1</strong> 天</p>
+        <p style="margin-top:8px;font-size:13px;color:var(--text-secondary);">你的成长花园 · 第 <strong id="dayCount">1</strong> 天</p>
+        <span class="streak-pill" id="gardenStreakPill">🔥 连续记录 0 天</span>
       </div>
     </div>
   </div>
@@ -2193,6 +2329,34 @@ body {
       <div class="level-xp-big" id="levelTodayXp">+0</div>
       <div style="font-size:12px;opacity:.8;">今日获得</div>
     </div>
+  </div>
+
+  <!-- ===== 我的成长小院（模块花园） ===== -->
+  <div class="garden-section">
+    <div class="garden-head">
+      <h3>🌿 我的成长小院</h3>
+      <span class="sub">每个角落，都是你走过的路</span>
+    </div>
+    <div class="module-grid" id="moduleGarden"></div>
+  </div>
+
+  <!-- ===== 月度总结入口 ===== -->
+  <div class="monthly-card" onclick="switchPage('growthai')">
+    <div class="mc-icon">📖</div>
+    <div class="mc-body">
+      <div class="mc-title">月度成长总结</div>
+      <div class="mc-sub">看看这个月，你的人生留下了什么痕迹</div>
+    </div>
+    <div class="mc-arrow">→</div>
+  </div>
+
+  <!-- ===== 本周成长节奏（数据可视化） ===== -->
+  <div class="viz-card">
+    <div class="viz-head">
+      <span class="vh-title">📊 本周成长节奏</span>
+      <span class="vh-sub" id="vizWeekRange">—</span>
+    </div>
+    <div class="viz-bars" id="vizBars"></div>
   </div>
 
   <div class="phase-badge">🎯 当前阶段：求职 + 能力提升（2026.07 - 2027.01）</div>
@@ -2286,7 +2450,7 @@ body {
   </div>
 
   <!-- 个人资料卡片 -->
-  <div class="level-card" id="profileCard" style="background:linear-gradient(135deg, #FDE8EE, #FED0D6);">
+  <div class="level-card" id="profileCard" style="background:linear-gradient(135deg, #EAF1E6, #D7E8D1);">
     <div style="display:flex;align-items:center;gap:16px;">
       <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--guava-soft),#FFFDE7);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(255,130,162,.2);" id="profileAvatar"><svg width="46" height="54"><use href="#spongebob"/></svg></div>
       <div style="flex:1;">
@@ -5414,11 +5578,89 @@ function refreshDashboard() {
   renderWeekOverview(calcWeekStats());
   renderDashFinanceHealth();
   renderGrowthLevel();
+  renderGarden();
   renderDailyReport();
   renderTodayStatus();
   try { renderGrowthCalendar(); } catch(e) { console.warn('[Dashboard] 日历渲染异常:', e); }
   try { renderWeeklyTimeline(); } catch(e) { console.warn('[Dashboard] 周时间轴渲染异常:', e); }
   try { renderYearReview(); } catch(e) { console.warn('[Dashboard] 年度回顾渲染异常:', e); }
+}
+
+function renderGarden() {
+  // 连续记录天数（复用已有 calcStreak）
+  try {
+    const streak = calcStreak();
+    const sp = document.getElementById('gardenStreakPill');
+    if (sp) sp.textContent = '🔥 连续记录 ' + streak + ' 天';
+  } catch (e) { console.warn('[Garden] 连续天数异常:', e); }
+
+  // 我的成长小院：各模块卡片化展示（数量 + 进度）
+  try {
+    const mods = [
+      { page: 'english', icon: '🌍', name: '英语成长', key: 'english_records', sub: '每天进步一点点' },
+      { page: 'reading', icon: '📚', name: '读书计划', key: 'read_books', sub: '读过的每一页' },
+      { page: 'ai', icon: '🛠️', name: 'AI 能力库', key: 'ai_tools', sub: '用过的每个工具', extra: 'ai_tasks' },
+      { page: 'job', icon: '💼', name: '求职管理', key: 'job_apply', sub: '投出的每份心意' },
+      { page: 'xhs', icon: '🎬', name: '社媒运营', key: 'xhs_productions', sub: '发出的每个作品' },
+      { page: 'intake', icon: '🍎', name: '身心健康', key: 'exercises', sub: '照顾好自己的每一天', extra: 'meals' }
+    ];
+    const grid = document.getElementById('moduleGarden');
+    if (!grid) return;
+    const counts = mods.map(m => {
+      const a = DB.get(m.key, []);
+      const b = m.extra ? DB.get(m.extra, []) : [];
+      return (Array.isArray(a) ? a.length : 0) + (Array.isArray(b) ? b.length : 0);
+    });
+    const max = Math.max(1, ...counts);
+    grid.innerHTML = mods.map((m, i) => `
+      <div class="module-card" onclick="switchPage('${m.page}')">
+        <div class="module-top">
+          <div class="module-icon">${m.icon}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="module-name">${m.name}</div>
+            <div class="module-sub">${m.sub}</div>
+          </div>
+          <div class="module-count">${counts[i]}<small>条</small></div>
+        </div>
+        <div class="module-prog"><i style="width:${Math.round(counts[i] / max * 100)}%"></i></div>
+      </div>`).join('');
+  } catch (e) { console.warn('[Garden] 模块渲染异常:', e); }
+
+  // 本周成长节奏（数据可视化）：每日活跃度 = 完成目标 + 各模块当天记录数
+  try {
+    const now = new Date();
+    const dayOfWeek = now.getDay() || 7;
+    const monday = new Date(now); monday.setDate(now.getDate() - dayOfWeek + 1);
+    const labels = ['一', '二', '三', '四', '五', '六', '日'];
+    const keys = ['english_records', 'reading_records', 'ai_tasks', 'job_apply', 'xhs_productions', 'exercises', 'meals'];
+    let maxAct = 1;
+    const data = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      const goals = DB.get('goals_' + key);
+      let score = (Array.isArray(goals) && goals.some(g => g.done)) ? 1 : 0;
+      keys.forEach(k => {
+        const arr = DB.get(k, []);
+        if (Array.isArray(arr)) score += arr.filter(r => r.date === key).length;
+      });
+      maxAct = Math.max(maxAct, score);
+      data.push({ label: labels[i], score, isToday: key === now.toISOString().slice(0, 10) });
+    }
+    const wrap = document.getElementById('vizBars');
+    if (wrap) {
+      wrap.innerHTML = data.map(d => `
+        <div class="viz-bar-col ${d.isToday ? 'today' : ''}">
+          <div class="viz-bar ${d.score === 0 ? 'zero' : ''}" style="height:${Math.max(6, Math.round(d.score / maxAct * 100))}%"></div>
+          <div class="viz-day">${d.label}</div>
+        </div>`).join('');
+    }
+    const range = document.getElementById('vizWeekRange');
+    if (range) {
+      const fmt = x => (x.getMonth() + 1) + '/' + x.getDate();
+      range.textContent = fmt(monday) + ' – ' + fmt(now);
+    }
+  } catch (e) { console.warn('[Garden] 可视化异常:', e); }
 }
 
 function calcWeekStats() {
