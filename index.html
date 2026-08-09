@@ -4876,6 +4876,14 @@ function toggleTheme(){
   showOcrToast(next === 'day' ? '☀️ 已切换到白天模式' : '🌙 已切换到夜间模式');
 }
 
+// 按时间自动切换：22:00 ~ 07:00 夜间，其余白天（页面加载时调用）
+function applyAutoTheme(){
+  const h = new Date().getHours();
+  const theme = (h >= 22 || h < 7) ? 'night' : 'day';
+  applyTheme(theme);
+  DB.set('theme', theme);
+}
+
 // Load migration config
 loadDataConfig();
 // Extend DB with sync and migrate capabilities
@@ -15061,8 +15069,8 @@ document.addEventListener('DOMContentLoaded', function(){
   applyMobileImportParams();
   initDailyTimers();
   restoreTimerLabels();
-  // 应用主题（默认夜间，可读用户偏好）
-  applyTheme(DB.get('theme', 'night'));
+  // 应用主题：按时间自动（22:00~07:00 夜间，其余白天）
+  applyAutoTheme();
 
   // 1. Auto-sync when app comes to foreground (mobile-friendly)
   document.addEventListener('visibilitychange', () => {
