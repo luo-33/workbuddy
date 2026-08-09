@@ -13006,7 +13006,7 @@ function authRegister() {
     email,
     password,
     options: {
-        emailRedirectTo: "https://workbuddy-psi.vercel.app/"
+        emailRedirectTo: window.location.origin + "/"
     }
 })
     .then(({ data, error }) => {
