@@ -5021,9 +5021,23 @@ const DB = {
   get(key, def=null) { try { const d = localStorage.getItem('pg_'+key); return d ? JSON.parse(d) : def; } catch(e) { return def; } },
   set(key, val) {
     localStorage.setItem('pg_'+key, JSON.stringify(val));
-    // 同步改为手动触发：用户点击侧边栏「🔄 同步数据」时才同步
+    // 写入后 4s 防抖自动上云（仅"主动写入"触发；切页面/刷新不触发）
+    _scheduleAutoSync();
   }
 };
+
+// 写入后防抖自动上传云端（支持同一账号跨设备实时同步）
+let _autoSyncTimer = null;
+function _scheduleAutoSync() {
+  if(!(DATA_CONFIG.mode === 'cloud' && currentUser && currentUser.loggedIn && isSupabaseReady())) return;
+  // 如果是"下载云端回写本地"触发的 DB.set，不要再次上传（避免循环）
+  if(typeof syncManager !== 'undefined' && syncManager._applyingCloud) return;
+  if(_autoSyncTimer) clearTimeout(_autoSyncTimer);
+  _autoSyncTimer = setTimeout(() => {
+    _autoSyncTimer = null;
+    if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
+  }, 4000);
+}
 
 // ===== 昼夜模式切换 =====
 function applyTheme(theme){
@@ -13492,10 +13506,14 @@ function initSupabase() {
         updateAuthUI();
         // Ensure profile exists
         ensureProfile(user.id);
-        // 刷新恢复登录后自动切云端，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
+        // 刷新恢复登录后自动切云端并同步（一次），保证打开页面就能看到云端数据
         DATA_CONFIG.mode = 'cloud';
         DB.set('data_config', DATA_CONFIG);
         updateAuthUI();
+        // 延迟 500ms 等待 updateAuthUI 完成，再触发 syncAll（避免与登录态初始化的其他写入冲突）
+        setTimeout(() => {
+          if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
+        }, 500);
       }
     });
 
@@ -13504,10 +13522,15 @@ function initSupabase() {
       if(session?.user) {
         currentUser = { id: session.user.id, email: session.user.email, loggedIn: true };
         ensureProfile(session.user.id);
-        // 已登录用户自动使用云端模式，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
+        // 已登录用户自动使用云端模式，并触发一次同步
         DATA_CONFIG.mode = 'cloud';
         DB.set('data_config', DATA_CONFIG);
         updateAuthUI();
+        if(event === 'SIGNED_IN') {
+          setTimeout(() => {
+            if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
+          }, 500);
+        }
       } else {
         currentUser = { id: null, email: null, loggedIn: false };
       }
@@ -13638,13 +13661,16 @@ function authLogin() {
         return;
       }
       closeModal('authModal');
-      showOcrToast('✅ 登录成功！请点击侧边栏「🔄 同步数据」手动同步');
+      showOcrToast('✅ 登录成功！正在同步云端数据...');
       const sb = document.getElementById('sidebarSyncBtn');
       if(sb) sb.style.display = 'inline';
-      // 登录后自动切 cloud 模式，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
+      // 登录后自动切 cloud 模式，并触发一次 syncAll 拉取云端数据
       DATA_CONFIG.mode = 'cloud';
       DB.set('data_config', DATA_CONFIG);
       updateAuthUI();
+      setTimeout(() => {
+        if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
+      }, 300);
     })
     .catch((err) => {
       clearTimeout(timeoutId);
@@ -13732,6 +13758,7 @@ function toggleDataMode() {
 // ========== SYNC MANAGER ==========
 const syncManager = {
   _syncing: false,
+  _applyingCloud: false, // download → DB.set 时为 true，防止触发再次上传
   _tables: ['profiles', 'daily_plans', 'english_records', 'nce_records', 'ai_tools', 'ai_tasks', 'job_records', 'interview_records', 'reading_records', 'knowledge_cards', 'wechat_articles', 'xhs_records', 'health_records', 'nutrition_records', 'exercise_records', 'finance_records', 'weekly_reviews', 'achievements', 'emotion_feedbacks'],
   _lastSync: null,
 
@@ -13913,6 +13940,9 @@ const syncManager = {
 
     const userId = currentUser.id;
     let downloaded = 0, errors = 0, errorDetails = [];
+    // 标记"正在从云端回写到本地"，期间 DB.set 不触发自动上传
+    this._applyingCloud = true;
+    try {
     
     // 每张表下载后的回写逻辑（云端 → localStorage）
     const applyDownload = (tableName, rows) => {
@@ -14253,6 +14283,9 @@ const syncManager = {
 
     this._logSync('download', { downloaded, errors, errorDetails });
     return { success: true, downloaded, errors, errorDetails };
+    } finally {
+      this._applyingCloud = false;
+    }
   },
 
   async syncAll() {
