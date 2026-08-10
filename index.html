@@ -2160,6 +2160,7 @@ body {
       <span id="themeToggleBtn" style="color:var(--text-secondary);cursor:pointer;flex-shrink:0;" onclick="toggleTheme()" title="点击切换昼夜模式">🌙 夜间</span>
     </div>
     <div style="margin-top:4px;font-size:11px;display:flex;gap:4px;align-items:center;">
+      <span id="sidebarSync" style="color:var(--text-secondary);">💻 本地</span>
       <span id="sidebarSyncBtn" style="display:none;color:#2da667;cursor:pointer;" onclick="syncManager.syncAll()">🔄 同步数据</span>
       <span id="sidebarSyncStatus" style="color:var(--text-secondary);font-size:10px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
@@ -13525,7 +13526,7 @@ function updateAuthUI() {
     el.innerHTML = `👤 ${currentUser.email.slice(0,18)}`;
     el.style.color = '#2da667';
     if(syncBtn) syncBtn.style.display = 'inline';
-    if(DATA_CONFIG.mode === 'cloud') {
+    if(sync && DATA_CONFIG.mode === 'cloud') {
       sync.innerHTML = '☁️ 云端';
       sync.style.color = '#2da667';
     }
@@ -13638,7 +13639,8 @@ function authLogin() {
       }
       closeModal('authModal');
       showOcrToast('✅ 登录成功！请点击侧边栏「🔄 同步数据」手动同步');
-      document.getElementById('sidebarSyncBtn').style.display = 'inline';
+      const sb = document.getElementById('sidebarSyncBtn');
+      if(sb) sb.style.display = 'inline';
       // 登录后自动切 cloud 模式，但不再自动同步（用户手动点击侧边栏「🔄 同步数据」）
       DATA_CONFIG.mode = 'cloud';
       DB.set('data_config', DATA_CONFIG);
@@ -13718,8 +13720,10 @@ function toggleDataMode() {
   DATA_CONFIG.mode = newMode;
   DB.set('data_config', DATA_CONFIG);
   const sync = document.getElementById('sidebarSync');
-  sync.innerHTML = newMode === 'local' ? '💻 本地' : '☁️ 云端';
-  sync.style.color = newMode === 'local' ? '#b3a0a8' : '#2da667';
+  if(sync) {
+    sync.innerHTML = newMode === 'local' ? '💻 本地' : '☁️ 云端';
+    sync.style.color = newMode === 'local' ? '#b3a0a8' : '#2da667';
+  }
   showOcrToast(newMode === 'local' ? '💻 已切换到本地模式' : '☁️ 已切换到云端模式');
   // Auto-sync when switching to cloud
   if(newMode === 'cloud') syncManager.syncAll();
