@@ -7143,8 +7143,9 @@ function calcSleepDuration(wake, sleep){
   const [sh, sm] = sleep.split(':').map(Number);
   let wakeMin = wh*60 + wm;
   let sleepMin = sh*60 + sm;
-  if(sleepMin <= wakeMin) sleepMin += 24*60;
-  let diff = sleepMin - wakeMin;
+  // 睡眠时长 = 起床时间 - 睡觉时间；若跨天（ wake < sleep 则 wake 加 24h）
+  if(wakeMin < sleepMin) wakeMin += 24*60;
+  let diff = wakeMin - sleepMin;
   if(diff < 0) diff += 24*60;
   const h = Math.floor(diff / 60);
   const m = diff % 60;
