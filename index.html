@@ -5021,23 +5021,9 @@ const DB = {
   get(key, def=null) { try { const d = localStorage.getItem('pg_'+key); return d ? JSON.parse(d) : def; } catch(e) { return def; } },
   set(key, val) {
     localStorage.setItem('pg_'+key, JSON.stringify(val));
-    // 写入后 4s 防抖自动上云（仅"主动写入"触发；切页面/刷新不触发）
-    _scheduleAutoSync();
+    // 同步改为纯手动：仅点击侧边栏「🔄 同步数据」按钮时触发，不再写入即同步
   }
 };
-
-// 写入后防抖自动上传云端（支持同一账号跨设备实时同步）
-let _autoSyncTimer = null;
-function _scheduleAutoSync() {
-  if(!(DATA_CONFIG.mode === 'cloud' && currentUser && currentUser.loggedIn && isSupabaseReady())) return;
-  // 如果是"下载云端回写本地"触发的 DB.set，不要再次上传（避免循环）
-  if(typeof syncManager !== 'undefined' && syncManager._applyingCloud) return;
-  if(_autoSyncTimer) clearTimeout(_autoSyncTimer);
-  _autoSyncTimer = setTimeout(() => {
-    _autoSyncTimer = null;
-    if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
-  }, 4000);
-}
 
 // ===== 昼夜模式切换 =====
 function applyTheme(theme){
@@ -5111,7 +5097,9 @@ DB.migrate = function() {
       finance_records: formatFinanceForDB(data),
       weekly_reviews: formatWeeklyForDB(data),
       achievements: formatAchievementsForDB(data),
-      emotion_feedbacks: formatEmotionFeedbackForDB(data)
+      emotion_feedbacks: formatEmotionFeedbackForDB(data),
+      daily_reports: formatDailyReportsForDB(data),
+      steps_records: formatStepsForDB(data)
     },
     config: DATA_CONFIG
   };
@@ -5478,6 +5466,29 @@ function formatEmotionFeedbackForDB(data) {
       one_sentence: fb.oneSentence || null,
       note: note || null
     });
+  });
+  return results;
+}
+
+function formatDailyReportsForDB(data) {
+  const reports = data['pg_daily_reports'] || [];
+  return reports.map(r => ({
+    report_date: r.date || null,
+    score: r.score || null,
+    items: r.items || null,
+    feedback: r.feedback || null,
+    tips: r.tips || null
+  }));
+}
+
+function formatStepsForDB(data) {
+  const results = [];
+  Object.keys(data).forEach(k => {
+    if(k.startsWith('pg_steps_')) {
+      const date = k.replace('pg_steps_', '');
+      const steps = parseInt(data[k]) || 0;
+      if(steps) results.push({ record_date: date, steps });
+    }
   });
   return results;
 }
@@ -13506,14 +13517,10 @@ function initSupabase() {
         updateAuthUI();
         // Ensure profile exists
         ensureProfile(user.id);
-        // 刷新恢复登录后自动切云端并同步（一次），保证打开页面就能看到云端数据
+        // 刷新恢复登录后自动切云端模式（不自动同步，由用户点击「🔄 同步数据」）
         DATA_CONFIG.mode = 'cloud';
         DB.set('data_config', DATA_CONFIG);
         updateAuthUI();
-        // 延迟 500ms 等待 updateAuthUI 完成，再触发 syncAll（避免与登录态初始化的其他写入冲突）
-        setTimeout(() => {
-          if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
-        }, 500);
       }
     });
 
@@ -13522,15 +13529,10 @@ function initSupabase() {
       if(session?.user) {
         currentUser = { id: session.user.id, email: session.user.email, loggedIn: true };
         ensureProfile(session.user.id);
-        // 已登录用户自动使用云端模式，并触发一次同步
+        // 已登录用户自动使用云端模式（不自动同步，由用户点击「🔄 同步数据」）
         DATA_CONFIG.mode = 'cloud';
         DB.set('data_config', DATA_CONFIG);
         updateAuthUI();
-        if(event === 'SIGNED_IN') {
-          setTimeout(() => {
-            if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
-          }, 500);
-        }
       } else {
         currentUser = { id: null, email: null, loggedIn: false };
       }
@@ -13661,16 +13663,13 @@ function authLogin() {
         return;
       }
       closeModal('authModal');
-      showOcrToast('✅ 登录成功！正在同步云端数据...');
+      showOcrToast('✅ 登录成功！请点侧边栏「🔄 同步数据」同步云端');
       const sb = document.getElementById('sidebarSyncBtn');
       if(sb) sb.style.display = 'inline';
-      // 登录后自动切 cloud 模式，并触发一次 syncAll 拉取云端数据
+      // 登录后自动切 cloud 模式（不自动同步，由用户点击「🔄 同步数据」）
       DATA_CONFIG.mode = 'cloud';
       DB.set('data_config', DATA_CONFIG);
       updateAuthUI();
-      setTimeout(() => {
-        if(typeof syncManager !== 'undefined' && !syncManager._syncing) syncManager.syncAll();
-      }, 300);
     })
     .catch((err) => {
       clearTimeout(timeoutId);
@@ -13868,6 +13867,8 @@ const syncManager = {
       weekly_reviews: tables.weekly_reviews,
       achievements: tables.achievements,
       emotion_feedbacks: tables.emotion_feedbacks,
+      daily_reports: tables.daily_reports,
+      steps_records: tables.steps_records,
     };
 
     // Track per-table error counts; skip table after too many failures
@@ -13898,6 +13899,8 @@ const syncManager = {
             : tableName === 'emotion_feedbacks' ? 'user_id,feedback_date'
             : tableName === 'nutrition_records' ? 'user_id,record_date,meal_type,food_name'
             : tableName === 'health_records' ? 'user_id,record_date'
+            : tableName === 'daily_reports' ? 'user_id,report_date'
+            : tableName === 'steps_records' ? 'user_id,record_date'
             : tableName === 'profiles' ? 'id'
             : 'id';
           const { error } = await supabaseClient.from(tableName).upsert(batch, {
@@ -14250,6 +14253,22 @@ const syncManager = {
           if(r.note) DB.set('dailyNote_'+date, r.note);
           count++;
         });
+      }
+      else if(tableName === 'daily_reports') {
+        const existing = DB.get('daily_reports', []);
+        const keys = new Set(existing.map(e => e.date));
+        const newRows = rows.filter(r => !keys.has(r.report_date)).map(r => ({
+          date: r.report_date, score: r.score, items: r.items, feedback: r.feedback, tips: r.tips
+        }));
+        existing.push(...newRows);
+        DB.set('daily_reports', existing);
+        count = newRows.length;
+      }
+      else if(tableName === 'steps_records') {
+        rows.forEach(r => {
+          if(r.record_date && r.steps) DB.set('steps_' + r.record_date, r.steps);
+        });
+        count = rows.length;
       }
       return count;
     };
