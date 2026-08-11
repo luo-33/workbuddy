@@ -6620,29 +6620,6 @@ function renderWeeklyTrend() {
   }).join('');
 }
 
-function renderGrowthLevel() {
-  const jobAppsCount = DB.get('job_apply',[]).length;
-  const engTotalMins = DB.get('english_records',[]).reduce((s,r)=>s+(parseInt(r.time)||0),0);
-  const aiCount = DB.get('ai_tasks',[]).length + DB.get('ai_tools',[]).length;
-  const xhsPub = DB.get('xhs_records',[]).filter(r=>r.status==='published').length;
-  const wechatPub = DB.get('wechat_articles',[]).filter(r=>r.status==='published').length;
-  const burnCount = DB.get('burn_records',[]).length;
-
-  const jobPct = Math.min(jobAppsCount*8, 100);
-  const engPct = Math.min(engTotalMins / 10, 100);
-  const aiPct = Math.min(aiCount*12, 100);
-  const ipPct = Math.min((xhsPub+wechatPub)*15, 100);
-  const sportPct = Math.min(burnCount*10, 100);
-
-  document.getElementById('skillBars').innerHTML = `
-    <div class="skill-bar-row"><div class="skill-label"><span class="name">💼 职业能力</span><span class="pct">${Math.round(jobPct)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${jobPct}%"></div></div></div>
-    <div class="skill-bar-row"><div class="skill-label"><span class="name">🌍 英语能力</span><span class="pct">${Math.round(engPct)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${engPct}%"></div></div></div>
-    <div class="skill-bar-row"><div class="skill-label"><span class="name">🤖 AI技能</span><span class="pct">${Math.round(aiPct)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${aiPct}%"></div></div></div>
-    <div class="skill-bar-row"><div class="skill-label"><span class="name">📕 个人IP</span><span class="pct">${Math.round(ipPct)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${ipPct}%"></div></div></div>
-    <div class="skill-bar-row"><div class="skill-label"><span class="name">🏃 身体状态</span><span class="pct">${Math.round(sportPct)}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${sportPct}%"></div></div></div>
-  `;
-}
-
 function renderBadges() {
   renderHonorWall();
 }
@@ -13983,14 +13960,21 @@ const syncManager = {
             ignoreDuplicates: false
           });
           if(error) {
-            const errInfo = this._handleError(`上传 ${tableName}`, error);
-            errors++;
-            errorDetails.push(errInfo);
-            tableErrors[tableName]++;
-            // After 3 errors on same table, skip rest of batches
-            if(tableErrors[tableName] >= 3) {
-              console.warn(`[Sync] ${tableName} failed 3 times, skipping`);
-              break;
+            // 409 / 23505 唯一冲突是正常幂等表现：云端已有这条数据，不算错误，不弹警告
+            const isConflict = error.code === '23505' || error.status === 409 || (error.message && error.message.includes('duplicate'));
+            if(isConflict) {
+              console.log(`[Sync] ${tableName} 冲突跳过 ${batch.length} 条（已存在）`);
+              uploaded += batch.length; // 冲突也视为已对齐
+            } else {
+              const errInfo = this._handleError(`上传 ${tableName}`, error);
+              errors++;
+              errorDetails.push(errInfo);
+              tableErrors[tableName]++;
+              // After 3 errors on same table, skip rest of batches
+              if(tableErrors[tableName] >= 3) {
+                console.warn(`[Sync] ${tableName} failed 3 times, skipping`);
+                break;
+              }
             }
           } else {
             uploaded += batch.length;
@@ -14069,8 +14053,9 @@ const syncManager = {
           note: r.note, aiSummary: r.ai_summary
         }));
         const existing = DB.get('english_records', []);
-        const localDates = new Set(existing.map(e => e.date));
-        const newRows = cloudData.filter(r => r.date && !localDates.has(r.date));
+        // 按内容去重：同一日期+同一标题视为同一条
+        const localKeys = new Set(existing.map(e => (e.date||'') + '|' + (e.article||'')));
+        const newRows = cloudData.filter(r => !localKeys.has((r.date||'') + '|' + (r.article||'')));
         existing.push(...newRows);
         DB.set('english_records', existing);
         count = newRows.length;
