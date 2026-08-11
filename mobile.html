@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>WorkBuddy · 个人成长</title>
+<style>
+:root{--bg:#F5F0EB;--card:#fff;--text:#2c2416;--text2:#8c7b6b;--green:#6B8F71;--green2:#A3C4A8;--red:#c4726e;--amber:#d4a853;--blue:#7b9cb8;--border:#e8e0d5;--shadow:0 2px 12px rgba(0,0,0,.06);--r:16px;--r2:12px;--font:'-apple-system','PingFang SC','Microsoft YaHei',sans-serif}
+[data-theme="dark"]{--bg:#1a1814;--card:#292520;--text:#e8e0d5;--text2:#9c8f7c;--green:#7eab8a;--green2:#5c7d64;--red:#d48480;--amber:#c99d50;--blue:#8eaac0;--border:#3a352c;--shadow:0 2px 12px rgba(0,0,0,.25)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+header{padding:16px 18px 6px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;background:var(--bg)}
+header h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+header .theme-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.page{display:none;padding:0 16px;animation:fadeIn .25s}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-sm{padding:12px 14px;margin-bottom:10px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.card-sub{font-size:12px;color:var(--text2)}
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-box{background:var(--card);border-radius:var(--r2);padding:14px;text-align:center;box-shadow:var(--shadow);border:1px solid var(--border)}
+.stat-box .num{font-size:28px;font-weight:700;color:var(--green);line-height:1.1}
+.stat-box .label{font-size:12px;color:var(--text2);margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;transition:.15s}
+.btn:active{background:var(--bg);transform:scale(.97)}
+.btn-primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-primary:active{background:var(--green2)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;font-family:var(--font);outline:none;transition:.15s}
+.input:focus{border-color:var(--green)}
+.input-sm{padding:8px 12px;font-size:13px}
+select.input{appearance:none;-webkit-appearance:none}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.tag-green{background:var(--green);color:#fff}
+.tag-amber{background:var(--amber);color:#fff}
+.tag-red{background:var(--red);color:#fff}
+.tag-blue{background:var(--blue);color:#fff}
+.progress-bar{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin:6px 0}
+.progress-fill{height:100%;border-radius:3px;background:var(--green);transition:width .4s}
+.list-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.list-item:last-child{border-bottom:none}
+.list-item .icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.list-item .info{flex:1;min-width:0}
+.list-item .info .title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item .info .sub{font-size:12px;color:var(--text2)}
+.list-item .right{font-size:12px;color:var(--text2);flex-shrink:0;text-align:right}
+.empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:14px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding:20px 18px 30px;animation:slideUp .25s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h3{font-size:17px;margin-bottom:14px}
+.modal .close{position:absolute;top:12px;right:16px;width:32px;height:32px;border-radius:50%;border:none;background:var(--bg);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+nav.bottom-tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--border);z-index:50;padding:4px 0 env(safe-area-inset-bottom,8px)}
+nav.bottom-tabs .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:none;color:var(--text2);font-size:10px;cursor:pointer;transition:.15s}
+nav.bottom-tabs .tab.active{color:var(--green)}
+nav.bottom-tabs .tab .tab-icon{font-size:20px}
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--card);padding:10px 20px;border-radius:20px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg);color:var(--text);transition:.15s;white-space:nowrap}
+.chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+@media(min-width:500px){body{max-width:480px;margin:0 auto}.bottom-tabs{max-width:480px;left:50%;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 WorkBuddy</h1>
+  <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
+</header>
+
+<div id="toast" class="toast"></div>
+
+<!-- ===== 首页 ===== -->
+<div class="page active" id="page-home">
+  <div class="card" style="background:linear-gradient(135deg,#e8f0e8,#f5f0eb)">
+    <div class="card-title">⏰ 今日作息</div>
+    <div class="stats-row">
+      <div class="stat-box" onclick="setTime('wake')">
+        <div class="num" id="wakeTime">--:--</div>
+        <div class="label">🌅 起床时间</div>
+      </div>
+      <div class="stat-box" onclick="setTime('sleep')">
+        <div class="num" id="sleepTime">--:--</div>
+        <div class="label">🌙 睡觉时间</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:14px;color:var(--text2)">
+      睡眠时长：<strong id="sleepDuration">--</strong>
+    </div>
+    <div style="text-align:center;margin-top:10px">
+      <span id="streakBadge" class="tag tag-green" style="font-size:12px;padding:5px 14px">🔥 连续 1 天</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 今日计划 <span class="card-sub" id="planSummary"></span></div>
+    <div id="todayPlanList"></div>
+    <div class="btn-row" style="margin-top:10px"><button class="btn btn-sm btn-primary" onclick="switchTab('plan')">📝 管理计划</button></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 今日概览</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="todayWords">0</div><div class="label">今日单词</div></div>
+      <div class="stat-box"><div class="num" id="todayKcal">0</div><div class="label">摄入 kcal</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="todayExercise">0</div><div class="label">运动 min</div></div>
+      <div class="stat-box"><div class="num" id="todayBalance">¥0</div><div class="label">今日收支</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 英语 ===== -->
+<div class="page" id="page-english">
+  <div class="card">
+    <div class="card-title">📚 IELTS 词汇学习</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="engTotalWords">0</div><div class="label">词库总数</div></div>
+      <div class="stat-box"><div class="num" id="engLearned">0</div><div class="label">已掌握</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="engReviewToday">0</div><div class="label">今日待复习</div></div>
+      <div class="stat-box"><div class="num" id="engStreakDays">0</div><div class="label">学习连续天数</div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="startReview()">🔄 开始复习</button>
+      <button class="btn" onclick="openSearchModal()">🔍 搜索单词</button>
+      <button class="btn" onclick="openWordbookModal()">📖 我的生词本</button>
+    </div>
+  </div>
+
+  <div class="card" id="reviewCard" style="display:none">
+    <div class="card-title">📝 复习中</div>
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:36px;font-weight:700;margin-bottom:6px" id="reviewWord"></div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:16px" id="reviewPhonetic"></div>
+      <button class="btn btn-sm" onclick="speakWord()" style="margin-bottom:12px">🔊 听读音</button>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:12px" id="reviewHint"></div>
+      <div class="btn-row" style="justify-content:center;margin-bottom:8px">
+        <button class="btn btn-sm" onclick="revealMeaning()" id="revealBtn">👁 显示释义</button>
+      </div>
+      <div style="font-size:16px;margin:8px 0;min-height:24px" id="reviewMeaning"></div>
+      <div class="btn-row" style="justify-content:center;margin-top:8px" id="reviewActions" style="display:none">
+        <button class="btn btn-sm tag-red" onclick="reviewResult('wrong')">❌ 不认识</button>
+        <button class="btn btn-sm tag-amber" onclick="reviewResult('hard')">🤔 犹豫</button>
+        <button class="btn btn-sm tag-green" onclick="reviewResult('good')">✅ 认识</button>
+      </div>
+      <div style="display:none;margin-top:8px" id="spellingSection">
+        <input class="input input-sm" placeholder="输入单词拼写..." id="spellingInput" style="text-align:center;margin-top:8px">
+        <button class="btn btn-sm" onclick="checkSpelling()" style="margin-top:6px">✅ 提交拼写</button>
+        <div id="spellingResult" style="font-size:13px;margin-top:6px"></div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text2);font-size:12px" id="reviewProgress"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 今日学习记录</div>
+    <div id="todayEnglishLog"></div>
+    <button class="btn btn-sm" onclick="addEnglishLog()" style="margin-top:8px">+ 记录学习</button>
+  </div>
+</div>
+
+<!-- ===== 健康 ===== -->
+<div class="page" id="page-health">
+  <div class="card">
+    <div class="card-title">🍽️ 今日饮食</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="healthKcal">0</div><div class="label">摄入 kcal</div></div>
+      <div class="stat-box"><div class="num" id="healthProtein">0</div><div class="label">蛋白质 g</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="healthCarbs">0</div><div class="label">碳水 g</div></div>
+      <div class="stat-box"><div class="num" id="healthFat">0</div><div class="label">脂肪 g</div></div>
+    </div>
+    <div id="todayDietList" style="margin-top:8px"></div>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-sm btn-primary" onclick="openDietModal()">+ 记录饮食</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏃 今日运动</div>
+    <div class="stat-box" style="margin-bottom:8px"><div class="num" id="healthExerciseMin">0</div><div class="label">运动分钟</div></div>
+    <div id="todayExerciseList"></div>
+    <button class="btn btn-sm" onclick="openExerciseModal()" style="margin-top:8px">+ 记录运动</button>
+  </div>
+</div>
+
+<!-- ===== 财富 ===== -->
+<div class="page" id="page-wealth">
+  <div class="card">
+    <div class="card-title">💰 本月财务</div>
+    <div class="stats-row">
+      <div class="stat-box" style="border-left:3px solid var(--green)"><div class="num" style="color:var(--green)" id="wealthIncome">¥0</div><div class="label">收入</div></div>
+      <div class="stat-box" style="border-left:3px solid var(--red)"><div class="num" style="color:var(--red)" id="wealthExpense">¥0</div><div class="label">支出</div></div>
+    </div>
+    <div style="text-align:center;font-size:16px;font-weight:600">
+      结余：<span id="wealthBalance" style="color:var(--green)">¥0</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 最近流水</div>
+    <div id="wealthList"></div>
+    <button class="btn btn-sm btn-primary" onclick="openWealthModal()" style="margin-top:8px">+ 记录收支</button>
+  </div>
+</div>
+
+<!-- ===== 计划 ===== -->
+<div class="page" id="page-plan">
+  <div class="card">
+    <div class="card-title">📋 今日计划 <span class="card-sub" id="planDate"></span></div>
+    <div id="planList"></div>
+    <div class="btn-row" style="margin-top:10px">
+      <input class="input input-sm" id="newPlanInput" placeholder="添加新任务..." style="flex:1">
+      <button class="btn btn-sm btn-primary" onclick="addPlan()">+ 添加</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📅 历史计划</div>
+    <div class="chip-row" id="planDateChips"></div>
+    <div id="historyPlanList"></div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<nav class="bottom-tabs">
+  <button class="tab active" data-tab="home" onclick="switchTab('home')"><span class="tab-icon">🏠</span>首页</button>
+  <button class="tab" data-tab="english" onclick="switchTab('english')"><span class="tab-icon">📚</span>英语</button>
+  <button class="tab" data-tab="health" onclick="switchTab('health')"><span class="tab-icon">💪</span>健康</button>
+  <button class="tab" data-tab="wealth" onclick="switchTab('wealth')"><span class="tab-icon">💰</span>财富</button>
+  <button class="tab" data-tab="plan" onclick="switchTab('plan')"><span class="tab-icon">📋</span>计划</button>
+</nav>
+
+<!-- Modals will be created dynamically -->
+<div class="modal-overlay" id="modalOverlay"></div>
+
+<script>
+// ============ DATA LAYER ============
+const PREFIX = 'wb_';
+const DB = {
+  get(key, def) { try { const v = localStorage.getItem(PREFIX+key); return v ? JSON.parse(v) : def; } catch(e) { return def; } },
+  set(key, val) { localStorage.setItem(PREFIX+key, JSON.stringify(val)); },
+  del(key) { localStorage.removeItem(PREFIX+key); },
+  keys() { const ks = []; for(let i=0;i<localStorage.length;i++) { const k=localStorage.key(i); if(k&&k.startsWith(PREFIX)) ks.push(k.slice(PREFIX.length)); } return ks; }
+};
+
+function today() { return new Date().toISOString().slice(0,10); }
+function nowStr() { return new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); }
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+// ============ THEME ============
+function toggleTheme() {
+  const r = document.documentElement;
+  const isDark = r.getAttribute('data-theme') === 'dark';
+  r.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  DB.set('theme', isDark ? 'light' : 'dark');
+}
+(function(){ const t=DB.get('theme','light'); document.documentElement.setAttribute('data-theme',t); document.getElementById('themeBtn').textContent=t==='dark'?'🌙':'☀️'; })();
+
+// ============ NAVIGATION ============
+let currentTab = 'home';
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.bottom-tabs .tab').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  if(tab==='home') renderHome();
+  if(tab==='english') renderEnglish();
+  if(tab==='health') renderHealth();
+  if(tab==='wealth') renderWealth();
+  if(tab==='plan') renderPlan();
+}
+
+// ============ TIME INPUT ============
+function setTime(type) {
+  const t = new Date();
+  const h = String(t.getHours()).padStart(2,'0');
+  const m = String(t.getMinutes()).padStart(2,'0');
+  const val = h+':'+m;
+  DB.set('time_'+type+'_'+today(), val);
+  toast((type==='wake'?'🌅 起床':'🌙 睡觉')+'时间已记录：'+val);
+  renderHome();
+}
+
+// ============ STREAK ============
+function calcStreak() {
+  let s=0; const now=new Date();
+  for(let i=0;i<365;i++){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    const hasWake=DB.get('time_wake_'+ds,null);
+    const hasSleep=DB.get('time_sleep_'+ds,null);
+    const plans=DB.get('plans_'+ds,[]);
+    const hasPlan=plans.length>0;
+    const engLog=DB.get('english_log_'+ds,[]);
+    const hasEng=engLog.length>0;
+    if(hasWake||hasSleep||hasPlan||hasEng) s++;
+    else break;
+  }
+  return s;
+}
+
+// ============ HOME ============
+function renderHome() {
+  const td = today();
+  const w = DB.get('time_wake_'+td, null);
+  const sl = DB.get('time_sleep_'+td, null);
+  document.getElementById('wakeTime').textContent = w || '--:--';
+  document.getElementById('sleepTime').textContent = sl || '--:--';
+  if(w && sl) {
+    const [wh,wm]=w.split(':').map(Number), [sh,sm]=sl.split(':').map(Number);
+    let wmin=wh*60+wm, smin=sh*60+sm;
+    if(smin <= wmin) smin += 24*60;
+    const diff = smin - wmin;
+    document.getElementById('sleepDuration').textContent = Math.floor(diff/60)+'h '+(diff%60)+'min';
+  } else {
+    document.getElementById('sleepDuration').textContent = '--';
+  }
+  const streak = calcStreak();
+  document.getElementById('streakBadge').textContent = '🔥 连续 '+streak+' 天';
+
+  // Today plan summary
+  const plans = DB.get('plans_'+td, []);
+  const done = plans.filter(p=>p.done).length;
+  document.getElementById('planSummary').textContent = plans.length ? `(${done}/${plans.length})` : '';
+  const planList = document.getElementById('todayPlanList');
+  planList.innerHTML = plans.length ? plans.map(p=>`<div style="padding:6px 0;font-size:14px;display:flex;align-items:center;gap:8px"><span style="color:${p.done?'var(--green)':'var(--text2)'}">${p.done?'✅':'⬜'}</span> ${p.text}</div>`).join('') : '<div class="empty">暂无计划</div>';
+
+  // Overview
+  const engLog = DB.get('english_log_'+td, []);
+  document.getElementById('todayWords').textContent = engLog.reduce((s,l)=>s+(l.wordCount||0),0);
+  const dietLog = DB.get('diet_'+td, []);
+  document.getElementById('todayKcal').textContent = dietLog.reduce((s,l)=>s+(l.kcal||0),0);
+  const exLog = DB.get('exercise_'+td, []);
+  document.getElementById('todayExercise').textContent = exLog.reduce((s,l)=>s+(l.min||0),0);
+  const wealthLog = DB.get('wealth_'+td, []);
+  const bal = wealthLog.reduce((s,l)=>s+(l.type==='income'?l.amount:-l.amount),0);
+  document.getElementById('todayBalance').textContent = '¥'+(bal>=0?'+':'')+bal;
+}
+
+// ============ IELTS VOCABULARY ============
+const IELTS_WORDS = [
+  {w:"abandon",m:"放弃；抛弃"}, {w:"abstract",m:"抽象的；摘要"}, {w:"academy",m:"学院；学术"}, {w:"access",m:"进入；通道；访问"},
+  {w:"accommodate",m:"容纳；适应"}, {w:"accompany",m:"陪伴；伴随"}, {w:"accomplish",m:"完成；实现"}, {w:"accumulate",m:"积累；积聚"},
+  {w:"accurate",m:"精确的"}, {w:"achieve",m:"达到；实现"}, {w:"acknowledge",m:"承认；确认"}, {w:"acquire",m:"获得；习得"},
+  {w:"adapt",m:"适应；改编"}, {w:"adequate",m:"充足的"}, {w:"adjust",m:"调整；适应"}, {w:"administration",m:"管理；行政"},
+  {w:"adolescent",m:"青少年的"}, {w:"advocate",m:"提倡；倡导者"}, {w:"affect",m:"影响；感动"}, {w:"aggregate",m:"合计；总计"},
+  {w:"aid",m:"帮助；援助"}, {w:"allocate",m:"分配；拨出"}, {w:"alter",m:"改变；更改"}, {w:"alternative",m:"替代的；替代方案"},
+  {w:"ambiguous",m:"模棱两可的"}, {w:"amend",m:"修改；修订"}, {w:"analogy",m:"类比；比喻"}, {w:"analyse",m:"分析"},
+  {w:"annual",m:"每年的"}, {w:"anticipate",m:"预期；期望"}, {w:"apparent",m:"明显的"}, {w:"appendix",m:"附录；阑尾"},
+  {w:"appreciate",m:"欣赏；感激"}, {w:"approach",m:"方法；接近"}, {w:"appropriate",m:"适当的"}, {w:"approximate",m:"大约的"},
+  {w:"arbitrary",m:"任意的；武断的"}, {w:"aspect",m:"方面；层面"}, {w:"assemble",m:"集合；组装"}, {w:"assess",m:"评估；评定"},
+  {w:"assign",m:"分配；指派"}, {w:"assist",m:"帮助；协助"}, {w:"assume",m:"假设；承担"}, {w:"assure",m:"保证；使确信"},
+  {w:"attach",m:"附上；连接"}, {w:"attain",m:"达到；获得"}, {w:"attitude",m:"态度；看法"}, {w:"attribute",m:"属性；归因于"},
+  {w:"authority",m:"权威；当局"}, {w:"available",m:"可用的"}, {w:"aware",m:"意识到的"}, {w:"barrier",m:"障碍；壁垒"},
+  {w:"benefit",m:"利益；受益"}, {w:"bias",m:"偏见；偏向"}, {w:"bond",m:"纽带；债券"}, {w:"brief",m:"简短的；摘要"},
+  {w:"bulk",m:"大量；大部分"}, {w:"capable",m:"有能力的"}, {w:"capacity",m:"容量；能力"}, {w:"category",m:"类别；范畴"},
+  {w:"cease",m:"停止；终止"}, {w:"challenge",m:"挑战；质疑"}, {w:"channel",m:"渠道；频道"}, {w:"chapter",m:"章节"},
+  {w:"chart",m:"图表；海图"}, {w:"chemical",m:"化学的；化学品"}, {w:"circumstance",m:"环境；情况"}, {w:"cite",m:"引用；引证"},
+  {w:"civil",m:"公民的；文明的"}, {w:"clarify",m:"澄清；阐明"}, {w:"classical",m:"古典的；经典的"}, {w:"clause",m:"条款；从句"},
+  {w:"code",m:"代码；准则"}, {w:"coherent",m:"连贯的"}, {w:"coincide",m:"同时发生；一致"}, {w:"collapse",m:"崩溃；倒塌"},
+  {w:"colleague",m:"同事"}, {w:"commence",m:"开始"}, {w:"comment",m:"评论；意见"}, {w:"commission",m:"委员会；佣金"},
+  {w:"commit",m:"承诺；犯罪；提交"}, {w:"communicate",m:"交流；沟通"}, {w:"community",m:"社区；团体"}, {w:"compatible",m:"兼容的"},
+  {w:"compensate",m:"补偿；赔偿"}, {w:"compile",m:"编译；汇编"}, {w:"complement",m:"补充；互补"}, {w:"complex",m:"复杂的；复合体"},
+  {w:"component",m:"组成部分；组件"}, {w:"compound",m:"复合物；加剧"}, {w:"comprehensive",m:"全面的；综合的"}, {w:"comprise",m:"包含；由...组成"},
+  {w:"concentrate",m:"集中；专注"}, {w:"concept",m:"概念；观念"}, {w:"conclude",m:"总结；得出结论"}, {w:"concurrent",m:"同时发生的"},
+  {w:"conduct",m:"进行；行为"}, {w:"confer",m:"授予；商议"}, {w:"confine",m:"限制；局限于"}, {w:"confirm",m:"确认；证实"},
+  {w:"conflict",m:"冲突；矛盾"}, {w:"conform",m:"遵守；符合"}, {w:"consent",m:"同意；许可"}, {w:"consequence",m:"后果；结果"},
+  {w:"considerable",m:"相当大的"}, {w:"consistent",m:"一致的"}, {w:"constant",m:"持续的；常量"}, {w:"constitute",m:"构成；组成"},
+  {w:"constrain",m:"限制；约束"}, {w:"construct",m:"构建；建造"}, {w:"consult",m:"咨询；查阅"}, {w:"consume",m:"消费；消耗"},
+  {w:"contact",m:"接触；联系"}, {w:"contemporary",m:"当代的"}, {w:"context",m:"上下文；背景"}, {w:"contract",m:"合同；收缩"},
+  {w:"contradict",m:"矛盾；反驳"}, {w:"contrary",m:"相反的"}, {w:"contrast",m:"对比；对照"}, {w:"contribute",m:"贡献；投稿"},
+  {w:"controversy",m:"争论；争议"}, {w:"convene",m:"召集；开会"}, {w:"converse",m:"交谈；相反的"}, {w:"convert",m:"转换；转变"},
+  {w:"convince",m:"说服；使信服"}, {w:"cooperate",m:"合作"}, {w:"coordinate",m:"协调；坐标"}, {w:"core",m:"核心；中心"},
+  {w:"corporate",m:"公司的；企业的"}, {w:"correspond",m:"对应；通信"}, {w:"couple",m:"一对；夫妇"}, {w:"create",m:"创造；创建"},
+  {w:"credit",m:"信用；学分；归功于"}, {w:"criteria",m:"标准；准则"}, {w:"crucial",m:"关键的；至关重要的"}, {w:"culture",m:"文化；培养"},
+  {w:"currency",m:"货币；流通"}, {w:"cycle",m:"周期；循环"}, {w:"data",m:"数据"}, {w:"debate",m:"辩论；争论"},
+  {w:"decade",m:"十年"}, {w:"decline",m:"下降；拒绝"}, {w:"deduce",m:"推断；演绎"}, {w:"define",m:"定义；界定"},
+  {w:"definite",m:"明确的；确定的"}, {w:"demonstrate",m:"展示；证明"}, {w:"denote",m:"表示；指示"}, {w:"deny",m:"否认；拒绝"},
+  {w:"depress",m:"使沮丧；压低"}, {w:"derive",m:"源于；获得"}, {w:"design",m:"设计"}, {w:"despite",m:"尽管"},
+  {w:"detect",m:"检测；发现"}, {w:"deviate",m:"偏离；背离"}, {w:"device",m:"设备；装置"}, {w:"devote",m:"奉献；致力于"},
+  {w:"dimension",m:"维度；尺寸"}, {w:"diminish",m:"减少；缩小"}, {w:"discrete",m:"离散的；不连续的"}, {w:"discriminate",m:"歧视；区分"},
+  {w:"displace",m:"取代；移位"}, {w:"display",m:"显示；展示"}, {w:"dispose",m:"处理；布置"}, {w:"distinct",m:"明显的；不同的"},
+  {w:"distort",m:"扭曲；歪曲"}, {w:"distribute",m:"分配；分发"}, {w:"diverse",m:"多样的"}, {w:"document",m:"文档；记录"},
+  {w:"domain",m:"领域；域名"}, {w:"domestic",m:"国内的；家庭的"}, {w:"dominate",m:"主导；支配"}, {w:"draft",m:"草稿；草案"},
+  {w:"drama",m:"戏剧；剧本"}, {w:"duration",m:"持续时间"}, {w:"dynamic",m:"动态的；有活力的"}, {w:"economy",m:"经济"},
+  {w:"edit",m:"编辑"}, {w:"element",m:"元素；要素"}, {w:"eliminate",m:"消除；淘汰"}, {w:"emerge",m:"出现；浮现"},
+  {w:"emphasis",m:"强调；重点"}, {w:"empirical",m:"经验主义的"}, {w:"enable",m:"使能够"}, {w:"encounter",m:"遭遇；邂逅"},
+  {w:"energy",m:"能量；精力"}, {w:"enforce",m:"执行；强制"}, {w:"enhance",m:"增强；提高"}, {w:"enormous",m:"巨大的"},
+  {w:"ensure",m:"确保；保证"}, {w:"entity",m:"实体；存在"}, {w:"environment",m:"环境"}, {w:"equate",m:"等同；平等"},
+  {w:"equip",m:"装备；配备"}, {w:"equivalent",m:"等价的；等同物"}, {w:"erode",m:"侵蚀；腐蚀"}, {w:"error",m:"错误；误差"},
+  {w:"establish",m:"建立；确立"}, {w:"estate",m:"地产；财产"}, {w:"estimate",m:"估计；估算"}, {w:"ethnic",m:"种族的"},
+  {w:"evaluate",m:"评估；评价"}, {w:"eventual",m:"最终的"}, {w:"evident",m:"明显的"}, {w:"evolve",m:"进化；演变"},
+  {w:"exceed",m:"超过；超出"}, {w:"exclude",m:"排除；不包括"}, {w:"exhibit",m:"展览；展示"}, {w:"expand",m:"扩展；扩大"},
+  {w:"expert",m:"专家；专业的"}, {w:"exploit",m:"利用；开发"}, {w:"export",m:"出口；输出"}, {w:"expose",m:"暴露；揭露"},
+  {w:"external",m:"外部的"}, {w:"extract",m:"提取；摘录"}, {w:"facilitate",m:"促进；便利"}, {w:"factor",m:"因素；因子"},
+  {w:"feature",m:"特征；特点"}, {w:"federal",m:"联邦的"}, {w:"fee",m:"费用"}, {w:"file",m:"文件；档案"},
+  {w:"final",m:"最终的；决赛"}, {w:"finance",m:"金融；财务"}, {w:"finite",m:"有限的"}, {w:"flexible",m:"灵活的"},
+  {w:"fluctuate",m:"波动；变动"}, {w:"focus",m:"焦点；集中"}, {w:"format",m:"格式；格式化"}, {w:"formula",m:"公式；方案"},
+  {w:"forthcoming",m:"即将到来的"}, {w:"foundation",m:"基础；基金会"}, {w:"framework",m:"框架；结构"}, {w:"function",m:"功能；函数"},
+  {w:"fund",m:"基金；资助"}, {w:"fundamental",m:"基本的；基础的"}, {w:"furthermore",m:"此外；而且"}, {w:"gender",m:"性别"},
+  {w:"generate",m:"生成；产生"}, {w:"global",m:"全球的"}, {w:"goal",m:"目标"}, {w:"grade",m:"等级；评分"},
+  {w:"grant",m:"授予；补助金"}, {w:"guarantee",m:"保证；担保"}, {w:"guideline",m:"指南；指导方针"}, {w:"hence",m:"因此；从此"},
+  {w:"hierarchy",m:"层次；等级制度"}, {w:"highlight",m:"强调；高亮"}, {w:"hypothesis",m:"假设；假说"}, {w:"identical",m:"相同的；同一的"},
+  {w:"identify",m:"识别；确认"}, {w:"ideology",m:"意识形态"}, {w:"ignorance",m:"无知"}, {w:"illustrate",m:"说明；插图"},
+  {w:"image",m:"图像；形象"}, {w:"immigrate",m:"移民"}, {w:"impact",m:"影响；冲击"}, {w:"implement",m:"实施；执行"},
+  {w:"implication",m:"含义；暗示"}, {w:"implicit",m:"含蓄的；隐含的"}, {w:"imply",m:"暗示；意味着"}, {w:"impose",m:"强加；征收"},
+  {w:"incentive",m:"激励；刺激"}, {w:"incidence",m:"发生率"}, {w:"incline",m:"倾向；倾斜"}, {w:"income",m:"收入"},
+  {w:"incorporate",m:"合并；纳入"}, {w:"index",m:"索引；指数"}, {w:"indicate",m:"表明；指示"}, {w:"individual",m:"个人的；个体"},
+  {w:"induce",m:"诱导；引起"}, {w:"inevitable",m:"不可避免的"}, {w:"infer",m:"推断"}, {w:"infrastructure",m:"基础设施"},
+  {w:"inherent",m:"固有的；内在的"}, {w:"inhibit",m:"抑制；阻止"}, {w:"initial",m:"最初的"}, {w:"initiate",m:"发起；开始"},
+  {w:"injury",m:"伤害；受伤"}, {w:"innovation",m:"创新；革新"}, {w:"input",m:"输入；投入"}, {w:"insert",m:"插入"},
+  {w:"insight",m:"洞察力；见解"}, {w:"inspect",m:"检查；视察"}, {w:"instance",m:"实例；情况"}, {w:"institute",m:"学院；建立"},
+  {w:"instruct",m:"指示；教导"}, {w:"integral",m:"完整的；积分"}, {w:"integrate",m:"整合；融合"}, {w:"integrity",m:"正直；完整"},
+  {w:"intelligence",m:"智力；情报"}, {w:"intense",m:"强烈的；紧张的"}, {w:"interact",m:"互动；交互"}, {w:"intermediate",m:"中间的；中级的"},
+  {w:"internal",m:"内部的"}, {w:"interpret",m:"解释；解读"}, {w:"interval",m:"间隔；间歇"}, {w:"intervene",m:"干预；介入"},
+  {w:"intrinsic",m:"内在的；本质的"}, {w:"invest",m:"投资；投入"}, {w:"investigate",m:"调查；研究"}, {w:"invoke",m:"调用；援引"},
+  {w:"involve",m:"涉及；包含"}, {w:"isolate",m:"隔离；孤立"}, {w:"issue",m:"问题；发行"}, {w:"item",m:"项目；条目"},
+  {w:"job",m:"工作；职业"}, {w:"journal",m:"期刊；日志"}, {w:"justify",m:"证明...正当"}, {w:"label",m:"标签；标注"},
+  {w:"labour",m:"劳动；劳工"}, {w:"layer",m:"层；层次"}, {w:"lecture",m:"讲座；演讲"}, {w:"legal",m:"法律的；合法的"},
+  {w:"legislate",m:"立法"}, {w:"levy",m:"征收；税"}, {w:"liberal",m:"自由的；开明的"}, {w:"licence",m:"许可证；执照"},
+  {w:"likewise",m:"同样地"}, {w:"link",m:"链接；联系"}, {w:"locate",m:"定位；位于"}, {w:"logic",m:"逻辑"},
+  {w:"maintain",m:"维持；保养"}, {w:"major",m:"主要的；专业"}, {w:"manipulate",m:"操纵；操作"}, {w:"manual",m:"手册；手工的"},
+  {w:"margin",m:"边缘；利润"}, {w:"mature",m:"成熟的"}, {w:"maximise",m:"最大化"}, {w:"mechanism",m:"机制；原理"},
+  {w:"media",m:"媒体"}, {w:"mediate",m:"调解；调停"}, {w:"medical",m:"医疗的"}, {w:"medium",m:"中等的；媒介"},
+  {w:"mental",m:"精神的；心理的"}, {w:"method",m:"方法"}, {w:"migrate",m:"迁移；移居"}, {w:"military",m:"军事的"},
+  {w:"minimal",m:"最小的"}, {w:"minimise",m:"最小化"}, {w:"minimum",m:"最小值；最小的"}, {w:"ministry",m:"部；部门"},
+  {w:"minor",m:"次要的；未成年人"}, {w:"mode",m:"模式；方式"}, {w:"modify",m:"修改；调整"}, {w:"monitor",m:"监控；监视器"},
+  {w:"motive",m:"动机"}, {w:"mutual",m:"相互的；共同的"}, {w:"negate",m:"否定；否认"}, {w:"network",m:"网络"},
+  {w:"neutral",m:"中立的"}, {w:"nevertheless",m:"然而；尽管如此"}, {w:"norm",m:"规范；标准"}, {w:"normal",m:"正常的"},
+  {w:"notion",m:"概念；观念"}, {w:"notwithstanding",m:"尽管"}, {w:"nuclear",m:"核能的；核心的"}, {w:"objective",m:"目标；客观的"},
+  {w:"obtain",m:"获得"}, {w:"obvious",m:"明显的"}, {w:"occupy",m:"占据；忙于"}, {w:"occur",m:"发生；出现"},
+  {w:"odd",m:"奇数的；奇怪的"}, {w:"offset",m:"抵消；补偿"}, {w:"ongoing",m:"正在进行的"}, {w:"option",m:"选择；选项"},
+  {w:"orient",m:"东方；定向"}, {w:"outcome",m:"结果；成果"}, {w:"output",m:"输出；产量"}, {w:"overall",m:"整体的；全面的"},
+  {w:"overlap",m:"重叠"}, {w:"overseas",m:"海外的"}, {w:"panel",m:"面板；专家组"}, {w:"paradigm",m:"范例；范式"},
+  {w:"paragraph",m:"段落"}, {w:"parallel",m:"平行的；相似"}, {w:"parameter",m:"参数"}, {w:"participate",m:"参与"},
+  {w:"partner",m:"伙伴；合伙人"}, {w:"passive",m:"被动的"}, {w:"perceive",m:"感知；察觉"}, {w:"percent",m:"百分比"},
+  {w:"period",m:"时期；周期"}, {w:"persist",m:"坚持；持续"}, {w:"perspective",m:"视角；观点"}, {w:"phase",m:"阶段；相位"},
+  {w:"phenomenon",m:"现象"}, {w:"philosophy",m:"哲学"}, {w:"physical",m:"物理的；身体的"}, {w:"plus",m:"加；此外"},
+  {w:"policy",m:"政策；策略"}, {w:"portion",m:"部分；一份"}, {w:"pose",m:"姿势；提出"}, {w:"positive",m:"积极的；正的"},
+  {w:"potential",m:"潜力；潜在的"}, {w:"practitioner",m:"从业者"}, {w:"precede",m:"先于；在...之前"}, {w:"predict",m:"预测；预言"},
+  {w:"predominant",m:"主要的；占优势的"}, {w:"preliminary",m:"初步的"}, {w:"presume",m:"假定；推测"}, {w:"previous",m:"先前的"},
+  {w:"primary",m:"主要的；初级的"}, {w:"prime",m:"主要的；最好的"}, {w:"principal",m:"主要的；校长"}, {w:"principle",m:"原则；原理"},
+  {w:"prior",m:"之前的；优先的"}, {w:"priority",m:"优先；优先级"}, {w:"proceed",m:"继续；进行"}, {w:"process",m:"过程；处理"},
+  {w:"professional",m:"专业的；职业的"}, {w:"prohibit",m:"禁止"}, {w:"project",m:"项目；投影"}, {w:"promote",m:"促进；推广"},
+  {w:"proportion",m:"比例；部分"}, {w:"prospect",m:"前景；展望"}, {w:"protocol",m:"协议；礼节"}, {w:"psychology",m:"心理学"},
+  {w:"publication",m:"出版物"}, {w:"publish",m:"出版；发表"}, {w:"purchase",m:"购买"}, {w:"pursue",m:"追求；追赶"},
+  {w:"qualitative",m:"定性的"}, {w:"quote",m:"引用；报价"}, {w:"radical",m:"激进的；根本的"}, {w:"random",m:"随机的"},
+  {w:"range",m:"范围；排列"}, {w:"ratio",m:"比率；比例"}, {w:"rational",m:"理性的；合理的"}, {w:"react",m:"反应"},
+  {w:"recover",m:"恢复；康复"}, {w:"refine",m:"精炼；改进"}, {w:"regime",m:"政权；制度"}, {w:"region",m:"地区；区域"},
+  {w:"register",m:"登记；注册"}, {w:"regulate",m:"调节；管理"}, {w:"reinforce",m:"加强；强化"}, {w:"reject",m:"拒绝；排斥"},
+  {w:"relax",m:"放松"}, {w:"release",m:"释放；发布"}, {w:"relevant",m:"相关的"}, {w:"reliance",m:"依赖；信赖"},
+  {w:"reluctant",m:"不情愿的"}, {w:"rely",m:"依赖；依靠"}, {w:"remove",m:"移除；删除"}, {w:"require",m:"需要；要求"},
+  {w:"research",m:"研究；调查"}, {w:"reside",m:"居住"}, {w:"resolve",m:"解决；决心"}, {w:"resource",m:"资源"},
+  {w:"respond",m:"回应；反应"}, {w:"restore",m:"恢复；复原"}, {w:"restrain",m:"抑制；约束"}, {w:"restrict",m:"限制"},
+  {w:"retain",m:"保留；保持"}, {w:"reveal",m:"揭示；揭露"}, {w:"revenue",m:"收入；税收"}, {w:"reverse",m:"反转；相反的"},
+  {w:"revolution",m:"革命；旋转"}, {w:"rigid",m:"僵硬的；严格的"}, {w:"role",m:"角色；作用"}, {w:"route",m:"路线；途径"},
+  {w:"scenario",m:"场景；方案"}, {w:"schedule",m:"日程；安排"}, {w:"scheme",m:"计划；方案"}, {w:"scope",m:"范围；视野"},
+  {w:"section",m:"部分；部门"}, {w:"sector",m:"部门；领域"}, {w:"secure",m:"安全的；获得"}, {w:"seek",m:"寻求"},
+  {w:"select",m:"选择"}, {w:"sequence",m:"序列；顺序"}, {w:"series",m:"系列"}, {w:"shift",m:"转移；轮班"},
+  {w:"significant",m:"重要的；显著的"}, {w:"similar",m:"相似的"}, {w:"simulate",m:"模拟"}, {w:"site",m:"地点；场所"},
+  {w:"sole",m:"唯一的；脚底"}, {w:"somewhat",m:"有点；稍微"}, {w:"source",m:"来源；源头"}, {w:"specific",m:"具体的；特定的"},
+  {w:"sphere",m:"球体；领域"}, {w:"stable",m:"稳定的"}, {w:"statistics",m:"统计学；统计"}, {w:"status",m:"地位；状态"},
+  {w:"straightforward",m:"直接的；简单的"}, {w:"strategy",m:"策略；战略"}, {w:"stress",m:"压力；强调"}, {w:"structure",m:"结构；构造"},
+  {w:"style",m:"风格；样式"}, {w:"submit",m:"提交；服从"}, {w:"subordinate",m:"下属；从属的"}, {w:"subsequent",m:"随后的；后来的"},
+  {w:"subsidy",m:"补贴；津贴"}, {w:"substitute",m:"替代；替代品"}, {w:"successor",m:"后继者；接班人"}, {w:"sufficient",m:"充足的；足够的"},
+  {w:"sum",m:"总和；金额"}, {w:"summary",m:"摘要；总结"}, {w:"supplement",m:"补充；增补"}, {w:"survey",m:"调查；测量"},
+  {w:"survive",m:"生存；幸存"}, {w:"suspend",m:"暂停；悬挂"}, {w:"sustain",m:"维持；支撑"}, {w:"symbol",m:"符号；象征"},
+  {w:"target",m:"目标；靶子"}, {w:"task",m:"任务"}, {w:"team",m:"团队"}, {w:"technical",m:"技术的"},
+  {w:"technique",m:"技术；技巧"}, {w:"technology",m:"技术；科技"}, {w:"temporary",m:"暂时的"}, {w:"tense",m:"紧张的；时态"},
+  {w:"terminate",m:"终止；结束"}, {w:"text",m:"文本；文字"}, {w:"theme",m:"主题；题目"}, {w:"theory",m:"理论"},
+  {w:"thereby",m:"从而；因此"}, {w:"thesis",m:"论文；论点"}, {w:"topic",m:"话题；主题"}, {w:"trace",m:"追踪；痕迹"},
+  {w:"tradition",m:"传统"}, {w:"transfer",m:"转移；调动"}, {w:"transform",m:"转变；改变"}, {w:"transit",m:"运输；过境"},
+  {w:"transmit",m:"传输；传播"}, {w:"transport",m:"运输；交通"}, {w:"trend",m:"趋势；潮流"}, {w:"trigger",m:"触发；扳机"},
+  {w:"ultimate",m:"最终的；根本的"}, {w:"undergo",m:"经历；承受"}, {w:"underline",m:"强调；下划线"}, {w:"undertake",m:"承担；从事"},
+  {w:"uniform",m:"统一的；制服"}, {w:"unique",m:"独特的"}, {w:"utilise",m:"利用"}, {w:"valid",m:"有效的"},
+  {w:"vary",m:"变化；不同"}, {w:"vehicle",m:"车辆；媒介"}, {w:"version",m:"版本"}, {w:"via",m:"通过；经由"},
+  {w:"violate",m:"违反；侵犯"}, {w:"virtual",m:"虚拟的；实质上的"}, {w:"visible",m:"可见的"}, {w:"vision",m:"愿景；视力"},
+  {w:"visual",m:"视觉的"}, {w:"volume",m:"卷；容量；音量"}, {w:"voluntary",m:"自愿的"}, {w:"welfare",m:"福利；幸福"},
+  {w:"whereas",m:"然而；鉴于"}, {w:"widespread",m:"广泛的；普遍的"},
+];
+
+// Initialize word bank
+function initWordBank() {
+  const existing = DB.get('wordbank', null);
+  if(!existing) {
+    const bank = IELTS_WORDS.map((e,i) => ({
+      id: 'ielts_'+i,
+      word: e.w,
+      meaning: e.m,
+      added: today(),
+      learned: false,
+      reviews: 0,
+      correctCount: 0,
+      nextReview: today(),
+      interval: 1,
+      ease: 2.5
+    }));
+    DB.set('wordbank', bank);
+  }
+}
+initWordBank();
+
+// ============ ENGLISH ============
+function getDueWords() {
+  const bank = DB.get('wordbank', []);
+  const td = today();
+  return bank.filter(w => !w.learned || w.nextReview <= td);
+}
+
+function startReview() {
+  const due = getDueWords();
+  if(due.length === 0) {
+    toast('✅ 没有待复习的单词！');
+    return;
+  }
+  const reviewWords = due.sort(() => Math.random() - 0.5).slice(0, 20);
+  DB.set('reviewQueue', reviewWords);
+  DB.set('reviewIndex', 0);
+  DB.set('reviewCorrect', 0);
+  document.getElementById('reviewCard').style.display = 'block';
+  showReviewWord();
+  document.getElementById('page-english').scrollIntoView({behavior:'smooth'});
+}
+
+function showReviewWord() {
+  const queue = DB.get('reviewQueue', []);
+  const idx = DB.get('reviewIndex', 0);
+  if(idx >= queue.length) return finishReview();
+  const w = queue[idx];
+  document.getElementById('reviewWord').textContent = w.word;
+  document.getElementById('reviewPhonetic').textContent = '';
+  document.getElementById('reviewMeaning').textContent = '';
+  document.getElementById('reviewHint').textContent = '';
+  document.getElementById('reviewActions').style.display = 'none';
+  document.getElementById('revealBtn').style.display = 'inline-block';
+  document.getElementById('spellingSection').style.display = 'none';
+  document.getElementById('spellingResult').textContent = '';
+  document.getElementById('spellingInput').value = '';
+  document.getElementById('reviewProgress').textContent = `第 ${idx+1} / ${queue.length} 个`;
+}
+
+function speakWord() {
+  const queue = DB.get('reviewQueue', []);
+  const idx = DB.get('reviewIndex', 0);
+  const w = queue[idx];
+  if('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(w.word);
+    u.lang = 'en-US'; u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  } else {
+    toast('⚠️ 当前浏览器不支持语音');
+  }
+}
+
+function revealMeaning() {
+  const queue = DB.get('reviewQueue', []);
+  const idx = DB.get('reviewIndex', 0);
+  const w = queue[idx];
+  document.getElementById('reviewMeaning').textContent = w.meaning;
+  document.getElementById('reviewActions').style.display = 'flex';
+  document.getElementById('revealBtn').style.display = 'none';
+  document.getElementById('spellingSection').style.display = 'block';
+}
+
+function reviewResult(grade) {
+  const queue = DB.get('reviewQueue', []);
+  const idx = DB.get('reviewIndex', 0);
+  const w = queue[idx];
+  // Update spaced repetition data
+  const bank = DB.get('wordbank', []);
+  const bi = bank.findIndex(b => b.id === w.id);
+  if(bi >= 0) {
+    const b = bank[bi];
+    b.reviews = (b.reviews||0) + 1;
+    if(grade === 'good') {
+      b.correctCount = (b.correctCount||0) + 1;
+      b.interval = Math.round((b.interval||1) * (b.ease||2.5));
+      b.ease = Math.min(3, (b.ease||2.5) + 0.1);
+      b.learned = true;
+    } else if(grade === 'hard') {
+      b.interval = Math.max(1, Math.round((b.interval||1) * 0.6));
+      b.ease = Math.max(1.3, (b.ease||2.5) - 0.15);
+    } else {
+      b.interval = 1;
+      b.ease = Math.max(1.3, (b.ease||2.5) - 0.2);
+    }
+    const nd = new Date(); nd.setDate(nd.getDate() + b.interval);
+    b.nextReview = nd.toISOString().slice(0,10);
+    bank[bi] = b;
+  }
+  DB.set('wordbank', bank);
+  // Log
+  const td = today();
+  const log = DB.get('english_log_'+td, []);
+  log.push({time: nowStr(), word: w.word, meaning: w.meaning, result: grade});
+  DB.set('english_log_'+td, log);
+
+  if(grade === 'good') DB.set('reviewCorrect', DB.get('reviewCorrect',0) + 1);
+  DB.set('reviewIndex', idx + 1);
+  showReviewWord();
+}
+
+function checkSpelling() {
+  const queue = DB.get('reviewQueue', []);
+  const idx = DB.get('reviewIndex', 0);
+  const w = queue[idx];
+  const input = document.getElementById('spellingInput').value.trim().toLowerCase();
+  const correct = w.word.toLowerCase();
+  const el = document.getElementById('spellingResult');
+  if(input === correct) {
+    el.innerHTML = '✅ 拼写正确！';
+    el.style.color = 'var(--green)';
+  } else {
+    el.innerHTML = '❌ 正确拼写：<strong>'+w.word+'</strong>';
+    el.style.color = 'var(--red)';
+  }
+}
+
+function finishReview() {
+  const total = DB.get('reviewQueue', []).length;
+  const correct = DB.get('reviewCorrect', 0);
+  toast(`🎉 复习完成！${correct}/${total} 正确`);
+  document.getElementById('reviewCard').style.display = 'none';
+  DB.del('reviewQueue');
+  DB.del('reviewIndex');
+  DB.del('reviewCorrect');
+  renderEnglish();
+}
+
+function openSearchModal() {
+  const q = prompt('🔍 搜索 IELTS 单词（英文）：');
+  if(!q) return;
+  const bank = DB.get('wordbank', []);
+  const found = bank.filter(w => w.word.toLowerCase().includes(q.toLowerCase()));
+  if(found.length === 0) {
+    // Add to bank
+    const word = q.trim().toLowerCase();
+    const meaning = prompt(`"${word}" 的中文释义：`);
+    if(!meaning) return;
+    const exists = bank.find(w => w.word === word);
+    if(exists) { toast('⚠️ 该单词已在词库中'); return; }
+    bank.push({
+      id: 'user_'+Date.now(),
+      word, meaning,
+      added: today(),
+      learned: false,
+      reviews: 0, correctCount: 0,
+      nextReview: today(),
+      interval: 1, ease: 2.5
+    });
+    DB.set('wordbank', bank);
+    toast(`✅ 已添加 "${word}"`);
+  } else {
+    toast(`🔍 找到 ${found.length} 个匹配单词，已加入词库`);
+  }
+  renderEnglish();
+}
+
+function openWordbookModal() {
+  const bank = DB.get('wordbank', []);
+  const learned = bank.filter(w=>w.learned);
+  const notLearned = bank.filter(w=>!w.learned);
+  let html = '<h3>📖 我的生词本</h3>';
+  html += '<p style="color:var(--text2);margin-bottom:10px">已掌握 '+learned.length+' | 学习中 '+notLearned.length+' | 总计 '+bank.length+'</p>';
+  html += '<div style="max-height:50vh;overflow-y:auto">';
+  notLearned.forEach(w => {
+    html += `<div class="list-item"><div class="info"><div class="title">${w.word}</div><div class="sub">${w.meaning}</div></div><div class="right">${w.nextReview}</div></div>`;
+  });
+  html += '</div><button class="btn btn-sm" onclick="closeModal()" style="margin-top:10px">关闭</button>';
+  document.getElementById('modalOverlay').innerHTML = '<div class="modal">'+html+'</div>';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show');}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function addEnglishLog() {
+  const cnt = parseInt(prompt('今日学习单词数：')||'0');
+  if(!cnt) return;
+  const td = today();
+  const log = DB.get('english_log_'+td, []);
+  log.push({time: nowStr(), wordCount: cnt, note: '自主学习'});
+  DB.set('english_log_'+td, log);
+  renderEnglish();
+}
+
+function renderEnglish() {
+  const bank = DB.get('wordbank', []);
+  const due = getDueWords();
+  document.getElementById('engTotalWords').textContent = bank.length;
+  document.getElementById('engLearned').textContent = bank.filter(w=>w.learned).length;
+  document.getElementById('engReviewToday').textContent = due.length;
+  // Eng streak
+  let es=0; const now=new Date();
+  for(let i=0;i<365;i++){const d=new Date(now);d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const log=DB.get('english_log_'+ds,[]);if(log.length>0)es++;else break;}
+  document.getElementById('engStreakDays').textContent = es;
+
+  // Today log
+  const td = today();
+  const log = DB.get('english_log_'+td, []);
+  document.getElementById('todayEnglishLog').innerHTML = log.length ? log.map(l=>`<div class="list-item"><div class="info"><div class="title">${l.word||'自主学习'}</div><div class="sub">${l.meaning||l.note||''}</div></div><div class="right"><span class="tag ${l.result==='good'?'tag-green':l.result==='hard'?'tag-amber':l.result==='wrong'?'tag-red':'tag-blue'}">${l.result||l.wordCount+'词'}</span> ${l.time}</div></div>`).join('') : '<div class="empty">暂无学习记录</div>';
+}
+
+// ============ HEALTH ============
+function openDietModal() {
+  const food = prompt('食物名称：'); if(!food) return;
+  const kcal = parseInt(prompt('热量（kcal）：')||'0');
+  const protein = parseFloat(prompt('蛋白质（g）：')||'0');
+  const carbs = parseFloat(prompt('碳水（g）：')||'0');
+  const fat = parseFloat(prompt('脂肪（g）：')||'0');
+  const td = today();
+  const diet = DB.get('diet_'+td, []);
+  diet.push({time: nowStr(), food, kcal, protein, carbs, fat});
+  DB.set('diet_'+td, diet);
+  renderHealth(); toast('✅ 已记录');
+}
+function openExerciseModal() {
+  const type = prompt('运动类型：'); if(!type) return;
+  const min = parseInt(prompt('时长（分钟）：')||'0');
+  const td = today();
+  const ex = DB.get('exercise_'+td, []);
+  ex.push({time: nowStr(), type, min});
+  DB.set('exercise_'+td, ex);
+  renderHealth(); toast('✅ 已记录');
+}
+function renderHealth() {
+  const td = today();
+  const diet = DB.get('diet_'+td, []);
+  document.getElementById('healthKcal').textContent = diet.reduce((s,l)=>s+(l.kcal||0),0);
+  document.getElementById('healthProtein').textContent = diet.reduce((s,l)=>s+Math.round(l.protein||0),0);
+  document.getElementById('healthCarbs').textContent = diet.reduce((s,l)=>s+Math.round(l.carbs||0),0);
+  document.getElementById('healthFat').textContent = diet.reduce((s,l)=>s+Math.round(l.fat||0),0);
+  document.getElementById('todayDietList').innerHTML = diet.map(l=>`<div class="list-item"><div class="info"><div class="title">${l.food}</div><div class="sub">${l.kcal}kcal · 蛋白${l.protein}g · 碳水${l.carbs}g · 脂肪${l.fat}g</div></div><div class="right">${l.time}</div></div>`).join('');
+  const ex = DB.get('exercise_'+td, []);
+  document.getElementById('healthExerciseMin').textContent = ex.reduce((s,l)=>s+(l.min||0),0);
+  document.getElementById('todayExerciseList').innerHTML = ex.map(l=>`<div class="list-item"><div class="info"><div class="title">${l.type}</div><div class="sub">${l.min} 分钟</div></div><div class="right">${l.time}</div></div>`).join('');
+}
+
+// ============ WEALTH ============
+function openWealthModal() {
+  const type = confirm('收入请点确定，支出请点取消') ? 'income' : 'expense';
+  const amount = parseFloat(prompt((type==='income'?'收入':'支出')+'金额（¥）：')||'0');
+  if(!amount) return;
+  const category = prompt('分类（如：工资/餐饮/购物/交通）：')||'其他';
+  const note = prompt('备注（可选）：')||'';
+  const td = today();
+  const wl = DB.get('wealth_'+td, []);
+  wl.push({time: nowStr(), type, amount, category, note});
+  DB.set('wealth_'+td, wl);
+  renderWealth(); toast('✅ 已记录');
+}
+function renderWealth() {
+  const now = new Date();
+  const month = now.toISOString().slice(0,7);
+  let income = 0, expense = 0;
+  const allLogs = [];
+  const ks = DB.keys().filter(k=>k.startsWith('wealth_'));
+  ks.forEach(k => {
+    const logs = DB.get(k, []);
+    logs.forEach(l => {
+      const d = k.replace('wealth_','');
+      const item = {...l, date: d};
+      allLogs.push(item);
+      if(d.startsWith(month)) {
+        if(l.type==='income') income += l.amount;
+        else expense += l.amount;
+      }
+    });
+  });
+  document.getElementById('wealthIncome').textContent = '¥'+income.toFixed(2);
+  document.getElementById('wealthExpense').textContent = '¥'+expense.toFixed(2);
+  const bal = income - expense;
+  const balEl = document.getElementById('wealthBalance');
+  balEl.textContent = '¥'+(bal>=0?'+':'')+bal.toFixed(2);
+  balEl.style.color = bal>=0?'var(--green)':'var(--red)';
+
+  allLogs.sort((a,b)=>b.date.localeCompare(a.date)||b.time.localeCompare(a.time));
+  document.getElementById('wealthList').innerHTML = allLogs.slice(0,15).map(l=>`<div class="list-item"><div class="info"><div class="title">${l.category||'其他'}</div><div class="sub">${l.note||''} · ${l.date}</div></div><div class="right" style="color:${l.type==='income'?'var(--green)':'var(--red)'}">${l.type==='income'?'+':'-'}¥${l.amount.toFixed(2)}</div></div>`).join('') || '<div class="empty">暂无记录</div>';
+}
+
+// ============ PLAN ============
+function addPlan() {
+  const input = document.getElementById('newPlanInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const td = today();
+  const plans = DB.get('plans_'+td, []);
+  plans.push({text, done: false, time: nowStr()});
+  DB.set('plans_'+td, plans);
+  input.value = '';
+  renderPlan(); toast('✅ 已添加');
+}
+function togglePlan(index) {
+  const td = today();
+  const plans = DB.get('plans_'+td, []);
+  plans[index].done = !plans[index].done;
+  DB.set('plans_'+td, plans);
+  renderPlan();
+}
+function deletePlan(index) {
+  const td = today();
+  const plans = DB.get('plans_'+td, []);
+  plans.splice(index, 1);
+  DB.set('plans_'+td, plans);
+  renderPlan();
+}
+function renderPlan() {
+  const td = today();
+  document.getElementById('planDate').textContent = td;
+  const plans = DB.get('plans_'+td, []);
+  document.getElementById('planList').innerHTML = plans.length ? plans.map((p,i)=>`<div class="list-item"><div style="cursor:pointer;font-size:18px" onclick="togglePlan(${i})">${p.done?'✅':'⬜'}</div><div class="info"><div class="title" style="${p.done?'text-decoration:line-through;color:var(--text2)':''}">${p.text}</div></div><button class="btn btn-sm" onclick="deletePlan(${i})" style="color:var(--red)">✕</button></div>`).join('') : '<div class="empty">今天还没有计划</div>';
+
+  // History dates
+  const dateKeys = DB.keys().filter(k=>k.startsWith('plans_')).map(k=>k.replace('plans_','')).sort().reverse();
+  const chips = document.getElementById('planDateChips');
+  chips.innerHTML = dateKeys.slice(0,7).map(d=>`<span class="chip ${d===td?'active':''}" onclick="loadHistoryPlan('${d}',this)">${d}</span>`).join('');
+  if(dateKeys.length > 0) loadHistoryPlan(dateKeys[0]);
+}
+function loadHistoryPlan(date, el) {
+  document.querySelectorAll('#planDateChips .chip').forEach(c=>c.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const plans = DB.get('plans_'+date, []);
+  document.getElementById('historyPlanList').innerHTML = plans.length ? plans.map(p=>`<div class="list-item"><span>${p.done?'✅':'⬜'}</span><div class="info"><div class="title">${p.text}</div></div><div class="right">${p.time}</div></div>`).join('') : '<div class="empty">该日无计划</div>';
+}
+
+// ============ INIT ============
+(function init() {
+  renderHome();
+  // Handle time click on home page only on first load
+})();
+</script>
+</body>
+</html>
