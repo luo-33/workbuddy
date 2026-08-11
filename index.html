@@ -5346,6 +5346,7 @@ function formatXhsForDB(data) {
 
 function formatHealthForDB(data) {
   const bodyStates = [];
+  // 先收集身体状态（睡眠质量/精力/疲劳）
   for(const [key, val] of Object.entries(data)) {
     if(key.startsWith('pg_body_state_')) {
       const date = key.replace('pg_body_state_', '');
@@ -5354,8 +5355,28 @@ function formatHealthForDB(data) {
         sleep_hours: val.sleepHours != null ? val.sleepHours : null,
         sleep_quality: val.sleepQuality != null ? val.sleepQuality : null,
         energy_score: val.energy != null ? val.energy : null,
-        fatigue_level: val.fatigue != null ? val.fatigue : null
+        fatigue_level: val.fatigue != null ? val.fatigue : null,
+        wake_time: null,
+        sleep_time: null
       });
+    }
+  }
+  // 再把起床/睡觉时间合并到同一条 health_records 记录里（保证每日计划同步）
+  for(const [key, val] of Object.entries(data)) {
+    if(key.startsWith('pg_sleep_')) {
+      const date = key.replace('pg_sleep_', '');
+      let rec = bodyStates.find(b => b.record_date === date);
+      if(!rec) {
+        rec = { record_date: date, sleep_hours: null, sleep_quality: null, energy_score: null, fatigue_level: null, wake_time: null, sleep_time: null };
+        bodyStates.push(rec);
+      }
+      if(val.wake) rec.wake_time = val.wake;
+      if(val.sleep) rec.sleep_time = val.sleep;
+      // 如果本地没算 sleepHours，但 wake/sleep 都有，则重新算一次
+      if(rec.sleep_hours == null && val.wake && val.sleep) {
+        const diff = computeSleepMin(val.wake, val.sleep);
+        if(diff != null) rec.sleep_hours = Math.round(diff / 6) / 10; // 转为小时，保留一位小数
+      }
     }
   }
   return bodyStates;
@@ -13755,10 +13776,54 @@ function toggleDataMode() {
 }
 
 // ========== SYNC MANAGER ==========
+
+// 生成确定性 UUID：同一用户 + 同一表 + 同一自然键 → 永远同一个 id
+// 用于避免 Supabase 自动分配新 id 导致同一数据重复插入
+function stringToUUID(seed) {
+  // FNV-1a 风格 128-bit 哈希，输出标准 UUID 格式
+  let h1 = 0x811c9dc5, h2 = 0xc2b2ae35, h3 = 0x85ebca6b, h4 = 0xc2b2ae35;
+  for(let i = 0; i < seed.length; i++){
+    const c = seed.charCodeAt(i);
+    h1 ^= c; h1 = Math.imul(h1, 0x01000193);
+    h2 ^= c; h2 = Math.imul(h2, 0x01000193);
+    h3 ^= c; h3 = Math.imul(h3, 0x01000193);
+    h4 ^= c; h4 = Math.imul(h4, 0x01000193);
+  }
+  const hex = n => (n >>> 0).toString(16).padStart(8, '0');
+  return `${hex(h1).slice(0,8)}-${hex(h2).slice(0,4)}-4${hex(h3).slice(1,4)}-a${hex(h4).slice(1,4)}-${hex(h1).slice(4,8)}${hex(h2).slice(4,8)}${hex(h3).slice(4,8)}`;
+}
+
+function naturalKeyForSync(tableName, row) {
+  switch(tableName) {
+    case 'daily_plans': return (row.plan_date||'') + '|' + (row.goal_text||'');
+    case 'english_records': return (row.record_date||'') + '|' + (row.article_title||'');
+    case 'nce_records': return (row.title||'') + '|' + (row.book_name||'');
+    case 'ai_tools': return (row.name||'') + '|' + (row.category||'');
+    case 'ai_tasks': return (row.task_name||'') + '|' + (row.task_date||'');
+    case 'job_records': return (row.company||'') + '|' + (row.position||'') + '|' + (row.apply_date||'');
+    case 'interview_records': return (row.company||'') + '|' + (row.interview_date||'') + '|' + (row.round||'');
+    case 'reading_records': return (row.book_name||'') + '|' + (row.read_date||'') + '|' + (row.chapter||'') + '|' + (row.note_type||'');
+    case 'knowledge_cards': return (row.topic||'') + '|' + (row.card_type||'');
+    case 'wechat_articles': return (row.title||'');
+    case 'xhs_records': return (row.title||'') + '|' + (row.content_type||'');
+    case 'health_records': return (row.record_date||'');
+    case 'nutrition_records': return (row.record_date||'') + '|' + (row.meal_type||'') + '|' + (row.food_name||'');
+    case 'exercise_records': return (row.record_date||'') + '|' + (row.exercise_type||'');
+    case 'finance_records': return (row.record_date||'') + '|' + (row.type||'') + '|' + (row.category||'') + '|' + (row.amount||'');
+    case 'weekly_reviews': return (row.week_start||'');
+    case 'achievements': return (row.type||'') + '|' + (row.content||'');
+    case 'emotion_feedbacks': return (row.feedback_date||'');
+    case 'daily_reports': return (row.report_date||'');
+    case 'steps_records': return (row.record_date||'');
+    case 'profiles': return (row.id||'');
+    default: return JSON.stringify(row);
+  }
+}
+
 const syncManager = {
   _syncing: false,
   _applyingCloud: false, // download → DB.set 时为 true，防止触发再次上传
-  _tables: ['profiles', 'daily_plans', 'english_records', 'nce_records', 'ai_tools', 'ai_tasks', 'job_records', 'interview_records', 'reading_records', 'knowledge_cards', 'wechat_articles', 'xhs_records', 'health_records', 'nutrition_records', 'exercise_records', 'finance_records', 'weekly_reviews', 'achievements', 'emotion_feedbacks'],
+  _tables: ['profiles', 'daily_plans', 'english_records', 'nce_records', 'ai_tools', 'ai_tasks', 'job_records', 'interview_records', 'reading_records', 'knowledge_cards', 'wechat_articles', 'xhs_records', 'health_records', 'nutrition_records', 'exercise_records', 'finance_records', 'weekly_reviews', 'achievements', 'emotion_feedbacks', 'daily_reports', 'steps_records'],
   _lastSync: null,
 
   // ===== Log sync history =====
@@ -13885,24 +13950,34 @@ const syncManager = {
       }
 
       for(let i = 0; i < rows.length; i += 50) {
-        const batch = rows.slice(i, i + 50).map(r => {
+        // 本批次内按自然键去重：保留最后出现的记录，避免同一批次内同一 id 重复 upsert
+        const chunk = [];
+        const seenKeys = new Set();
+        const slice = rows.slice(i, i + 50);
+        for(let j = slice.length - 1; j >= 0; j--) {
+          const k = naturalKeyForSync(tableName, slice[j]);
+          if(!seenKeys.has(k)) {
+            seenKeys.add(k);
+            chunk.unshift(slice[j]);
+          }
+        }
+
+        const batch = chunk.map(r => {
           // profiles 表用 id 列（= user_id）；其他表用 user_id 列
           const base = tableName === 'profiles'
             ? { ...r, id: userId }
             : { ...r, user_id: userId };
+          // 为每一行生成确定性 UUID：同一用户+同一表+同一自然键 → 同一 id
+          // 这样同一数据反复同步不会插入新行，避免云端重复累积
+          if(!base.id) {
+            base.id = stringToUUID(userId + ':' + tableName + ':' + naturalKeyForSync(tableName, base));
+          }
           return { ...base, created_at: now, updated_at: now };
         });
 
         try {
-          // 不同表使用不同 onConflict（避免 409 重复错误）
-          const conflictKeys = tableName === 'daily_plans' ? 'user_id,plan_date,goal_text'
-            : tableName === 'emotion_feedbacks' ? 'user_id,feedback_date'
-            : tableName === 'nutrition_records' ? 'user_id,record_date,meal_type,food_name'
-            : tableName === 'health_records' ? 'user_id,record_date'
-            : tableName === 'daily_reports' ? 'user_id,report_date'
-            : tableName === 'steps_records' ? 'user_id,record_date'
-            : tableName === 'profiles' ? 'id'
-            : 'id';
+          // 所有行现在都有确定性 id，统一按 id 冲突更新（避免重复插入）
+          const conflictKeys = 'id';
           const { error } = await supabaseClient.from(tableName).upsert(batch, {
             onConflict: conflictKeys,
             ignoreDuplicates: false
@@ -14163,10 +14238,20 @@ const syncManager = {
       }
       else if(tableName === 'health_records') {
         rows.forEach(r => {
-          if(r.record_date) DB.set('body_state_' + r.record_date, {
+          if(!r.record_date) return;
+          // 身体状态
+          DB.set('body_state_' + r.record_date, {
             sleepHours: r.sleep_hours, sleepQuality: r.sleep_quality,
             energy: r.energy_score, fatigue: r.fatigue_level
           });
+          // 起床/睡觉时间（每日计划里的"今日作息"）
+          if(r.wake_time || r.sleep_time) {
+            const sleepRec = DB.get('pg_sleep_' + r.record_date, {});
+            if(r.wake_time) sleepRec.wake = r.wake_time;
+            if(r.sleep_time) sleepRec.sleep = r.sleep_time;
+            sleepRec._ts = Date.now();
+            DB.set('pg_sleep_' + r.record_date, sleepRec);
+          }
         });
         count = rows.length;
       }

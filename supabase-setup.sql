@@ -255,3 +255,97 @@ ALTER TABLE ai_tools
   ADD COLUMN IF NOT EXISTS count   int  DEFAULT 0,
   ADD COLUMN IF NOT EXISTS comment text,
   ADD COLUMN IF NOT EXISTS result  text;
+
+-- ============================================================
+-- v1.0.16 修复同步重复 + 每日计划"今日作息"同步
+-- 适用：在已有库上扩展（重复执行安全）
+-- ============================================================
+
+-- 1. health_records 增加起床/睡觉时间，用于同步每日计划里的"今日作息"
+ALTER TABLE health_records
+  ADD COLUMN IF NOT EXISTS wake_time TIME,
+  ADD COLUMN IF NOT EXISTS sleep_time TIME;
+
+-- 2. 补全 daily_reports / steps_records 表（代码 v1.0.16 已新增同步）
+CREATE TABLE IF NOT EXISTS daily_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  report_date DATE NOT NULL,
+  score INT,
+  items JSONB,
+  feedback TEXT,
+  tips TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_daily_reports_user_date ON daily_reports(user_id, report_date);
+
+CREATE TABLE IF NOT EXISTS steps_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  record_date DATE NOT NULL,
+  steps INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_steps_records_user_date ON steps_records(user_id, record_date);
+
+-- 为新增的两张表开启 RLS
+ALTER TABLE daily_reports ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "daily_reports_own" ON daily_reports;
+CREATE POLICY "daily_reports_own" ON daily_reports FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE steps_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "steps_records_own" ON steps_records;
+CREATE POLICY "steps_records_own" ON steps_records FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- 3. 清理已有重复数据（按自然键保留 updated_at 最新的一条）
+-- ⚠️ 仅在发现云端重复时执行一次；执行后前端再点「同步数据」即可对齐
+DELETE FROM english_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, record_date) id FROM english_records ORDER BY user_id, record_date, updated_at DESC
+);
+DELETE FROM nce_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, title) id FROM nce_records ORDER BY user_id, title, updated_at DESC
+);
+DELETE FROM ai_tools WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, name) id FROM ai_tools ORDER BY user_id, name, updated_at DESC
+);
+DELETE FROM ai_tasks WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, task_name, COALESCE(task_date, '1970-01-01'::date)) id FROM ai_tasks ORDER BY user_id, task_name, COALESCE(task_date, '1970-01-01'::date), updated_at DESC
+);
+DELETE FROM job_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, company, position, COALESCE(apply_date, '1970-01-01'::date)) id FROM job_records ORDER BY user_id, company, position, COALESCE(apply_date, '1970-01-01'::date), updated_at DESC
+);
+DELETE FROM interview_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, company, COALESCE(interview_date, '1970-01-01'::date)) id FROM interview_records ORDER BY user_id, company, COALESCE(interview_date, '1970-01-01'::date), updated_at DESC
+);
+DELETE FROM reading_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, book_name, COALESCE(read_date, '1970-01-01'::date)) id FROM reading_records ORDER BY user_id, book_name, COALESCE(read_date, '1970-01-01'::date), updated_at DESC
+);
+DELETE FROM knowledge_cards WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, topic) id FROM knowledge_cards ORDER BY user_id, topic, updated_at DESC
+);
+DELETE FROM wechat_articles WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, title) id FROM wechat_articles ORDER BY user_id, title, updated_at DESC
+);
+DELETE FROM xhs_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, title) id FROM xhs_records ORDER BY user_id, title, updated_at DESC
+);
+DELETE FROM health_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, record_date) id FROM health_records ORDER BY user_id, record_date, updated_at DESC
+);
+DELETE FROM nutrition_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, record_date, meal_type, food_name) id FROM nutrition_records ORDER BY user_id, record_date, meal_type, food_name, updated_at DESC
+);
+DELETE FROM exercise_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, record_date, exercise_type) id FROM exercise_records ORDER BY user_id, record_date, exercise_type, updated_at DESC
+);
+DELETE FROM finance_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, record_date, type, amount, category) id FROM finance_records ORDER BY user_id, record_date, type, amount, category, updated_at DESC
+);
+DELETE FROM daily_reports WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, report_date) id FROM daily_reports ORDER BY user_id, report_date, updated_at DESC
+);
+DELETE FROM steps_records WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, record_date) id FROM steps_records ORDER BY user_id, record_date, updated_at DESC
+);
